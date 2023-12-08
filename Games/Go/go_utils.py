@@ -3,15 +3,11 @@ from collections import deque
 BLACK = 1
 WHITE = -1
 
-from Games.Example_Game_Structure.game_utils import GameUtils
-
-class GoUtils(GameUtils):
+class GoUtils():
     """The go specific utility class.
     The current board contains the current player and other board information defined in go_board.
     The utilities are static functions called by GoUtils.function_name()
     """
-    def __init__(self):
-        pass
 
     def is_valid_move(self, board, move):
         """Check if a potential move for the go game is valid.
