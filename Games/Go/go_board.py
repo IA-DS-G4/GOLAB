@@ -1,6 +1,7 @@
 import copy 
 import numpy as np
 
+
 class GoBoard():
     def __init__(self, board_dimension, player, board_grid=[], game_history=None):
         """Initialize the game board
@@ -22,55 +23,42 @@ class GoBoard():
             self.game_history = []
 
     def flip_player(self):
-        """Update the player to the other player, 'b' to 'w' or 'w' to 'b'
-        The two players are represented by 1 (the one that moves first) and -1.
-        """
+        #Update the player to the other player
         if self.player == 1:
             self.player = -1
         else:
             self.player = 1
 
     def generate_augmented_boards(self):
-        """augment the training data using the flipped version and rotated version of the board itself
-        """
+        #augment the training data using the flipped version and rotated version of the board itself
         for i in range(4):
             # rotate counterclockwise
             new_board_grid = np.rot90(self.board_grid, i + 1)
-            yield GameBoard(self.board_dimension, self.player, board_grid=new_board_grid, game_history=None)
+            yield GoBoard(self.board_dimension, self.player, board_grid=new_board_grid, game_history=None)
 
         # flip horizontally
         new_board_grid = np.fliplr(self.board_grid)
-        yield GameBoard(self.board_dimension, self.player, board_grid=new_board_grid, game_history=None)
+        yield GoBoard(self.board_dimension, self.player, board_grid=new_board_grid, game_history=None)
 
     def reverse_board_config(self):
-        """Switch white and black stones and flip current player.
-        This is used for further data augmentation.
-        """
-        return GameBoard(self.board_dimension, -self.player, board_grid=-self.board_grid, game_history=None)
+        #Switch white and black stones and flip current player.
+        #This is used for data augmentation.
+        return GoBoard(self.board_dimension, -self.player, board_grid=-self.board_grid, game_history=None)
 
     def add_move_to_history(self, r, c):
-        """Add move (r, c) to the game_history field of the class
-        r is the row number ranged from 0 to self.board_dimension-1
-        c is the col number ranged from 0 to self.board_dimension-1
-        """
+        #Add move (r, c) to the game_history field of the class
         self.game_history.append((self.player, r, c))
 
     def get_last_position(self):
-        """Get the [r, c] position frmo the last moved,
-        taken from the last slot on game_history
-        Used for the GUIs to show the last moves
-        """
+        #Get the [r, c] position frmo the last moved,
         (player, r, c) = self.game_history[-1]
         return [r, c]
 
     def copy(self):
-        """Make a deep copy of the board object
-        Returns:
-            copy of the board object
-        """
+        # make a copy of the current board
         copy_board_grid = copy.deepcopy(self.board_grid)
         copy_game_history = copy.deepcopy(self.game_history)
-        return GameBoard(self.board_dimension, self.player, copy_board_grid, copy_game_history)
+        return GoBoard(self.board_dimension, self.player, copy_board_grid, copy_game_history)
 
     def __eq__(self, other):
         """Override the default Equals behavior"""

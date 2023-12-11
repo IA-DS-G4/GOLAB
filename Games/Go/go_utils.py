@@ -33,7 +33,7 @@ class GoUtils():
             return False
 
         #Invalid move because of Ko restrictions, this condition is checked before the liberty constraint
-        if GoUtils._is_invalid_move_because_of_ko(board_copy, move):
+        if GoUtils._check_ko_rule(board_copy, move):
             return False
 
         #Invalid move if placed in a spot that forms a group of stones with no liberty
@@ -86,7 +86,7 @@ class GoUtils():
             return False, board
 
         #Invalid move because of Ko restrictions, this condition is checked before the liberty constraint
-        if GoUtils._is_invalid_move_because_of_ko(board_copy, move):
+        if GoUtils._check_ko_rule(board_copy, move):
             #print("Invalid because of Ko")
             return False, board
 
@@ -212,8 +212,8 @@ class GoUtils():
 
     @staticmethod
     def _find_adjacent_positions_with_same_color(position, board_grid, current_player=None):
-        """Find the stones directly to the right, left, top or down of 
-        a stone on a board. Return a list of them in the order of up, down, left, right.
+        #Find the stones directly to the right, left, top or down of a stone on a board. Return a list of them in the order of up, down, left, right.
+        """
         Args:
             position: (r, c) the position we're trying to find neighbors for
             board_grid: 2d array representation of the board
@@ -316,18 +316,7 @@ class GoUtils():
         return total_liberties
 
     @staticmethod
-    def _is_invalid_move_because_of_ko(board, move):
-        """Detect if a move if invalid due to the ko condition
-        1. the current stone is surrounded by opponents in all directions not on the border (no neighbor with the same color and no liberty)
-        2. and the for all of the adjacent opponent stones, only one of them has no liberty after this move
-        3. and the one stone from 2 is not connected to any other stones
-        4. and the stone with no liberty from 2's position was played in the last move
-        Args:
-            board: current board config including whose turn it is
-            move: (row, col) tuple indicating the the location of the current move
-        Returns:
-            Boolean value indicating if the move is invalid because it is a Ko invalid move
-        """
+    def _check_ko_rule(board, move):
         if GoUtils._find_adjacent_positions_with_same_color(move, board.board_grid, board.player) == set() and GoUtils._count_liberty(board.board_grid, move) == 0:
             #Condition one passes
             board_copy = board.copy()
