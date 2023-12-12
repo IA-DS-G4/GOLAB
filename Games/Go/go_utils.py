@@ -10,14 +10,6 @@ class GoUtils():
     """
 
     def is_valid_move(self, board, move):
-        """Check if a potential move for the go game is valid.
-        Args:
-            board: current board as a go_board object
-            move: (r, c) tuple indicating the position of the considered move
-        Returns:
-            boolean variable indicating if the go move is valid.
-        """
-
         #Pass (-1, -1) is a valid move
         if GoUtils._is_move_pass(move):
             return True
@@ -58,16 +50,6 @@ class GoUtils():
         return True
 
     def make_move(self, board, move):
-        """Make a move (row,col) on a go board
-        Args:
-            board: current board: including dimension grid, player and history
-            move: (r, c) tuple indicating the position of the considered move
-        Returns:
-            A tuple indicating board config and if the move was valid (boolean value)
-            new board config if the move was successfully placed
-            old config if board is not updated
-        """
-
         board_copy = board.copy()
         #Pass (-1, -1) is a valid move
         if GoUtils._is_move_pass(move):
@@ -120,16 +102,9 @@ class GoUtils():
         return True, board_copy
 
     def evaluate_winner(self, board_grid):
-        """Evaluate who is the winner of the board configuration
-        Args:
-            board_grid: 2d array representation of the board
-        Returns:
-            player who won the game. 1: black or -1: white
-            Absolute difference in game score
-        """
         new_board = GoUtils._remove_captured_stones(board_grid)
         black_score = 0
-        white_score = 0
+        white_score = 5.5
 
         #Count the territories that don't have stones on them
         for (player, empty_pieces_positions) in GoUtils._find_connected_empty_pieces(new_board):
@@ -150,13 +125,6 @@ class GoUtils():
             return WHITE, abs(black_score - white_score)
 
     def is_game_finished(self, board):
-        """Check if the go game is finished by looking at its game history
-        The game is finished if the last two actions were both pass
-        Args:
-            board: current board as a go_board object
-        Returns:
-            Boolean variable indicating if the game is finished
-        """
         if len(board.game_history) < 2:
             return False
 
@@ -168,14 +136,6 @@ class GoUtils():
 
     @staticmethod
     def _remove_pieces_if_no_liberty(position, board_grid):
-        """Look at the pieces that form the group of position
-        If the group has no liberty, remove and return new grid
-        Args:
-            position: (r, c) tuple indicating the position of which piece we want to find the group for
-            board_grid: 2d array representation of the board
-        Returns:
-            new_board_grid: the new grid after removal of elements
-        """
         if GoUtils._count_liberty(board_grid, position) == 0:
             pieces_in_group = GoUtils._find_pieces_in_group(position, board_grid)
         else:
@@ -186,14 +146,6 @@ class GoUtils():
 
     @staticmethod
     def _find_pieces_in_group(position, board_grid):
-        """For a potential move, find the surrounding pieces of the same player's stone
-        that can form a group of stones
-        Args:
-            position: (r, c) tuple indicating the position of which piece we want to find the group for
-            board_grid: 2d array representation of the board
-        Returns:
-            a set of position tuples inidcaitng the pieces in the same group, including the originally position
-        """
         queue = deque() #Track the frontier of positions to be visited
         group_members = set() #Stores the group members we already visited
         queue.append(position)
@@ -212,14 +164,6 @@ class GoUtils():
 
     @staticmethod
     def _find_adjacent_positions_with_same_color(position, board_grid, current_player=None):
-        #Find the stones directly to the right, left, top or down of a stone on a board. Return a list of them in the order of up, down, left, right.
-        """
-        Args:
-            position: (r, c) the position we're trying to find neighbors for
-            board_grid: 2d array representation of the board
-        Returns:
-            an set of positions tuples that are immediately next to the original position with the same color
-        """
         neighbors = set()
         (r, c) = position
         if current_player != None:
@@ -244,14 +188,6 @@ class GoUtils():
 
     @staticmethod
     def _find_adjacent_positions_with_opposite_color(position, board_grid):
-        """Find the opposing stones directly to the right, left, top or down of 
-        a stone on a board. Return a list of them in the order of up, down, left, right.
-        Args:
-            position: (r, c) the position we're trying to find neighbors for
-            board_grid: 2d array representation of the board
-        Returns:
-            an set of positions tuples that are immediately next to the original position with the opposite color
-        """
         neighbors = set()
         (r, c) = position
         player = board_grid[r][c]
@@ -273,14 +209,6 @@ class GoUtils():
 
     @staticmethod
     def _count_liberty_for_one_stone(board_grid, position):
-        """Count the liberties associated with one stone on the board,
-        in other words, the adjacent empty crosses
-        Args:
-            board_grid: 2d array representation of the board and stone distributions
-            position: used to identify the stone that we're looking for liberties for
-        Returns:
-            The liberty number associated with the stone
-        """
         (r, c) = position
         board_dimension = len(board_grid)
         liberty = 0
@@ -302,13 +230,6 @@ class GoUtils():
 
     @staticmethod
     def _count_liberty(board_grid, position):
-        """Count the remaining liberties of the connected group of a particular position
-        Args:
-            board_grid: 2d array representation of the board and stone distributions
-            position: used to identify the connected group that we're looking for liberties for
-        Returns:
-            The remaining liberty number as an integer
-        """
         group = GoUtils._find_pieces_in_group(position, board_grid)
         total_liberties = 0
         for stone in group:
@@ -343,23 +264,10 @@ class GoUtils():
 
     @staticmethod
     def _is_move_pass(move):
-        """Check it the move tuple means passs
-        Args:
-            move: tuple indicating the location of the move, or (-1, -1) inidcating a pass
-        Returns:
-            a boolean value indiating if the move is a pass
-        """
         return move == (-1, -1)
 
     @staticmethod
     def _is_move_in_board(move, board_dimension):
-        """Check if a move is within the boundary of the Go board grid
-        Args:
-            move: (r, c) tuple indicating the position of the considered move
-            board_dimension: the vertical and horizontal dimension of the Go board
-        Returns:
-            boolean value indicating if the move is inside of the board range
-        """
         (r,c) = move
         if r < 0 or c < 0 or r >= board_dimension or c >= board_dimension:
             return False
@@ -367,14 +275,6 @@ class GoUtils():
 
     @staticmethod
     def _find_connected_empty_pieces(board_grid):
-        """Find the groups of connected empty pieces on the board and infer whose territory they are
-        using depth first search
-        Args:
-            board_grid: 2d array representation of the board
-        Returns:
-            a list of tuple, tuple's first element indicates which player's territory the empty pieces belong to
-            second element is a list of tuples indicating these empty pieces' locations(1, [(2,2),(3,3)])
-        """
         connected_empty_pieces_and_player = [] #Value to be returned
         border_stone_nums = {}
         border_stone_nums[BLACK] = 0
@@ -425,12 +325,6 @@ class GoUtils():
 
     @staticmethod
     def _get_next_empty_space_to_visit(visited):
-        """Return the first position not visited. None if all elements are visited
-        Args:
-            visited: a dictionary position->boolean indicating if the position has been visited
-        Returns:
-            the first position not visited. None if all elements are visited
-        """
         for position in visited:
             if not visited[position]:
                 return position
@@ -438,20 +332,10 @@ class GoUtils():
 
     @staticmethod
     def _remove_captured_stones(board_grid):
-        """Remove the captured/dead stones from the Go board and return a new board
-        Args:
-            board_grid: 2d array representation of the board
-        Returns:
-            new_board with the removed stones
-        """
         return board_grid
 
     @staticmethod
     def _count_stones(board_grid, player):
-        """Count the total number of stones on the board that belong to a certain player
-        Returns:
-            integer representing the total number of stones of this particular player
-        """
         count = 0
         for i in range(len(board_grid)):
             for j in range(len(board_grid[0])):
@@ -461,14 +345,6 @@ class GoUtils():
 
     @staticmethod
     def _find_direct_neighbors(position, board_grid):
-        """Find the stones directly to the right, left, top or down of 
-        a stone on a board. Return a list of them in the order of up, down, left, right.
-        Args:
-            position: (r, c) the position we're trying to find neighbors for
-            board_grid: 2d array representation of the board
-        Returns:
-            an set of positions tuples that are immediately next to the original position
-        """
         neighbors = set()
         (r, c) = position
         player = board_grid[r][c]

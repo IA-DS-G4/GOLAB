@@ -2,154 +2,138 @@ import pygame
 from pygame.locals import *
 from go_board import GoBoard
 from go_utils import GoUtils
-from go_graphics import render_go
+from go_graphics import RenderGo
 
+# Constants
+BOARD_SIZE = 9
+WIDTH = 90
+MARGIN = 2
+PADDING = 50
+DOT = 4
+BOARD = (WIDTH + MARGIN) * (BOARD_SIZE - 1) + MARGIN # Actual width for the board
+GAME_WIDTH = (WIDTH + MARGIN) * (BOARD_SIZE - 1) + MARGIN + PADDING * 2
+GAME_HEIGHT = GAME_WIDTH + 50
 
-BOARD_DIM = 5  # Define an x by x board
+colors = {
+    "b": (0, 0, 0),
+    "w": (245, 245, 245),
+    "r": (133, 42, 44),
+    "y": (255, 204, 153),
+    "g": (26, 81, 79)
+}
 
-# Define colors
-BLACK = (0, 0, 0)
-WHITE = (245, 245, 245)
-RED = (133, 42, 44)
-YELLOW = (208, 176, 144)
-GREEN = (26, 81, 79)
-
+# Players
 PLAYER_BLACK = 1
 PLAYER_WHITE = -1
-EMPTY = 0
 PASS = (-1, -1)
 
-# Define grid globals
-WIDTH = 20  # Width of each square on the board
-MARGIN = 1  # How thick the lines are
-PADDING = 50  # Distance between board and border of the window
-DOT = 4  # Number of dots
-BOARD = (WIDTH + MARGIN) * (BOARD_DIM - 1) + MARGIN  # Actual width for the board
-GAME_WIDTH = BOARD + PADDING * 2
-GAME_HIGHT = GAME_WIDTH + 100
-
-
-class Go:
+class GoGame:
     def __init__(self):
-        self.go_board = GoBoard(board_dimension=BOARD_DIM, player=PLAYER_BLACK)
+        self.board = GoBoard(board_dimension=BOARD_SIZE, player=PLAYER_BLACK)
         pygame.init()
         pygame.font.init()
-        self._display_surf = pygame.display.set_mode((GAME_WIDTH, GAME_HIGHT), pygame.HWSURFACE | pygame.DOUBLEBUF)
+        self.display_surface = pygame.display.set_mode((GAME_WIDTH, GAME_HEIGHT), pygame.HWSURFACE | pygame.DOUBLEBUF)
         pygame.display.set_caption('Go')
-        self.render = render_go(self)
+        self.renderer = RenderGo(self)
         self.utils = GoUtils()
-        self._running = True
-        self._playing = False
-        self._win = False
-        self.lastPosition = [-1, -1]
         self.pass_button_clicked = False
         self.passed_once = False
         self.game_over = False
+        self.running = True
+        self.playing = False
+        self.win = False
+        self.last_position = [-1, -1]
 
-    def on_event(self, event):
+
+    def handle_event(self, event):
         if event.type == pygame.QUIT:
-            self._running = False
+            self.running = False
 
         pos = pygame.mouse.get_pos()
-        if self._playing and event.type == pygame.MOUSEBUTTONDOWN and self.mouse_in_pass_button(pos):
+        if self.playing and event.type == pygame.MOUSEBUTTONDOWN and self.mouse_in_pass_button(pos):
             self.pass_button_clicked = True
-
         elif event.type == pygame.MOUSEBUTTONUP:
-            if self.mouse_in_botton(pos):
-                if not self._playing:
+            if self.mouse_in_button(pos):
+                if not self.playing:
                     self.start()
                 else:
                     self.surrender()
-                    self.go_board.flip_player()
-            elif self._playing and self.mouse_in_pass_button(pos):
-                self.pass_button_clicked = False
-                _, self.go_board = self.utils.make_move(board=self.go_board, move=PASS)
-                if not self.passed_once:
-                    self.passed_once = True
-                else:
-                    # Double Pass Game Over
-                    print("Game Over!")
-                    self.game_over = True
-
-                self.print_winner()
-
-            elif self._playing:
-                c = (pos[0] - PADDING + WIDTH // 2) // (WIDTH + MARGIN)
-                r = (pos[1] - PADDING + WIDTH // 2) // (WIDTH + MARGIN)
-
-                if 0 <= r < BOARD_DIM and 0 <= c < BOARD_DIM:
-                    _, self.go_board = self.utils.make_move(board=self.go_board, move=(r, c))
-                    self.passed_once = False
-                    self.print_winner()
-                    self.lastPosition = self.go_board.get_last_position()
-
-        # print(self.go_board)
-        # print()
-
+                    self.board.flip_player()
+            elif self.playing and self.mouse_in_pass_button(pos):
+                self.handle_pass_button_click()
+            elif self.playing:
+                self.handle_board_click(pos)
 
     def on_execute(self):
-        while (self._running):
-            self.go_board_init()
+        while self.running:
+            self.board_init()
             for event in pygame.event.get():
-                self.on_event(event)
-            self.render.render_all()
+                self.handle_event(event)
+            self.renderer.render_all()
             pygame.display.update()
         pygame.quit()
 
     def start(self):
-        self._playing = True
-        self.lastPosition = [-1, -1]
-        self.go_board = GoBoard(board_dimension=BOARD_DIM, player=PLAYER_BLACK)
-        self._win = False
+        self.playing = True
+        self.last_position = [-1, -1]
+        self.board = GoBoard(board_dimension=BOARD_SIZE, player=PLAYER_BLACK)
+        self.win = False
 
     def surrender(self):
-        self._playing = False
-        self._win = True
+        self.playing = False
+        self.win = True
 
-    def go_board_init(self):
-        self._display_surf.fill(YELLOW)
+    def board_init(self):
+        self.display_surface.fill(colors["y"])
         # Draw black background rect for game area
-        pygame.draw.rect(self._display_surf, BLACK,
+        pygame.draw.rect(self.display_surface, colors["b"],
                          [PADDING,
                           PADDING,
                           BOARD,
                           BOARD])
 
         # Draw the grid
-        for row in range(BOARD_DIM - 1):
-            for column in range(BOARD_DIM - 1):
-                pygame.draw.rect(self._display_surf, YELLOW,
+        for row in range(BOARD_SIZE - 1):
+            for column in range(BOARD_SIZE - 1):
+                pygame.draw.rect(self.display_surface, colors["y"],
                                  [(MARGIN + WIDTH) * column + MARGIN + PADDING,
                                   (MARGIN + WIDTH) * row + MARGIN + PADDING,
                                   WIDTH,
                                   WIDTH])
-    def mouse_in_botton(self, pos):
-        """ Check if mouse is in the button and return a boolean value
-        """
-        if GAME_WIDTH // 4 * 3 - 50 <= pos[0] <= GAME_WIDTH // 4 * 3 + 50 and GAME_HIGHT - 50 <= pos[
-            1] <= GAME_HIGHT - 20:
-            return True
-        return False
+    def mouse_in_button(self, pos):
+        return GAME_WIDTH // 2 - 50 <= pos[0] <= GAME_WIDTH // 2 + 50 and GAME_HEIGHT - 85 <= pos[1] <= GAME_HEIGHT - 55
 
     def mouse_in_pass_button(self, pos):
-        """ Check if mouse is in the pass button and return a boolean value
-        """
-        if GAME_WIDTH // 4 - 50 <= pos[0] <= GAME_WIDTH // 4 + 50 and GAME_HIGHT - 50 <= pos[1] <= GAME_HIGHT - 20:
-            return True
-        return False
+        return GAME_WIDTH // 2 - 50 <= pos[0] <= GAME_WIDTH // 2 + 50 and GAME_HEIGHT - 50 <= pos[1] <= GAME_HEIGHT - 20
 
+    def handle_pass_button_click(self):
+        self.pass_button_clicked = False
+        _, self.board = self.utils.make_move(board=self.board, move=PASS)
+        if not self.passed_once:
+            self.passed_once = True
+        else:
+            print("Game Over!")
+            self.game_over = True
+        self.print_winner()
+
+    def handle_board_click(self, pos):
+        col = (pos[0] - PADDING + WIDTH // 2) // (WIDTH + MARGIN)
+        row = (pos[1] - PADDING + WIDTH // 2) // (WIDTH + MARGIN)
+
+        if 0 <= row < BOARD_SIZE and 0 <= col < BOARD_SIZE:
+            _, self.board = self.utils.make_move(board=self.board, move=(row, col))
+            self.passed_once = False
+            self.print_winner()
+            self.last_position = self.board.get_last_position()
 
     def print_winner(self):
-        winner, winning_by_points = self.utils.evaluate_winner(self.go_board.board_grid)
-        if winner == PLAYER_BLACK:
-            print("Black wins by " + str(winning_by_points))
-        else:
-            print("White wins by " + str(winning_by_points))
+        winner, winning_by_points = self.utils.evaluate_winner(self.board.board_grid)
+        player = "Black" if winner == PLAYER_BLACK else "White"
+        print(f"{player} wins by {winning_by_points}")
 
     def retrieve_winner(self):
-        return self.utils.evaluate_winner(self.go_board.board_grid)
-
+        return self.utils.evaluate_winner(self.board.board_grid)
 
 if __name__ == "__main__":
-    go = Go()
-    go.on_execute()
+    go_game = GoGame()
+    go_game.on_execute()
