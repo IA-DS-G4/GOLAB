@@ -43,26 +43,63 @@ class GoGame:
         self.playing = False
         self.win = False
         self.last_position = [-1, -1]
-
+        self.agent = MuZero(model_path="../models", restored=True)
 
     def handle_event(self, event):
         if event.type == pygame.QUIT:
-            self.running = False
+            self._running = False
 
         pos = pygame.mouse.get_pos()
         if self.playing and event.type == pygame.MOUSEBUTTONDOWN and self.mouse_in_pass_button(pos):
             self.pass_button_clicked = True
+
         elif event.type == pygame.MOUSEBUTTONUP:
             if self.mouse_in_button(pos):
                 if not self.playing:
                     self.start()
+                    # Machine plays first move
+                    self.machine_responds()
+                    self.lastPosition = self.go_board.get_last_position()
+                    self.print_winner()
                 else:
                     self.surrender()
-                    self.board.flip_player()
-            elif self.playing and self.mouse_in_pass_button(pos):
-                self.handle_pass_button_click()
+                    self.go_board.flip_player()
+            elif self.mouse_in_pass_button(pos) and self.playing:
+                self.pass_button_clicked = False
+                _, self.go_board = self.utils.make_move(board=self.go_board, move=PASS)
+                if not self.passed_once:
+                    self.passed_once = True
+                    self.renderer.render_all()
+
+                    # Machine plays
+                    self.machine_responds()
+                    self.lastPosition = self.go_board.get_last_position()
+                    self.print_winner()
+
+                else:
+                    # Double Pass Game Over
+                    print("Game Over!")
+                    self.game_over = True
+
+
             elif self.playing:
-                self.handle_board_click(pos)
+                c = (pos[0] - PADDING + WIDTH // 2) // (WIDTH + MARGIN)
+                r = (pos[1] - PADDING + WIDTH // 2) // (WIDTH + MARGIN)
+
+                if 0 <= r < BOARD_DIM and 0 <= c < BOARD_DIM:
+                    is_valid, self.go_board = self.utils.make_move(board=self.go_board, move=(r, c))
+                    if is_valid:
+                        self.passed_once = False
+                        self.print_winner()
+                        self.lastPosition = self.go_board.get_last_position()
+                        self.renderer.render_all()
+
+                        # Machine plays
+                        self.machine_responds()
+                        self.print_winner()
+                        self.lastPosition = self.go_board.get_last_position()
+                    else:
+                        print("Invalid move!")
 
     def on_execute(self):
         while self.running:
@@ -133,6 +170,24 @@ class GoGame:
 
     def retrieve_winner(self):
         return self.utils.evaluate_winner(self.board.board_grid)
+
+    def machine_responds(self):
+        print("machine responds")
+        print("for board.", self.go_board)
+        _, win_prob = self.agent.play_with_raw_nn(self.go_board)
+        machine_mv = self.agent.play_with_mcts(self.go_board, simulation_number=1000)
+        print(machine_mv, win_prob)
+        if machine_mv == (-1, -1):  # Machine passes
+            if self.passed_once == True:
+                print("Game Over!")
+                self.game_over = True
+            else:
+                _, self.go_board = self.utils.make_move(board=self.go_board, move=machine_mv)
+                print("machine passes")
+        else:
+            self.passed_once = False
+            _, self.go_board = self.utils.make_move(board=self.go_board, move=machine_mv)
+            print("Machine thinks the winning probability is:", win_prob)
 
 if __name__ == "__main__":
     go_game = GoGame()
