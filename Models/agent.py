@@ -8,7 +8,7 @@ from Games.Go.go_board import GoBoard
 from Games.Go.go_utils import GoUtils
 #from self_play.mcts import MCTS
 #from self_play.self_play import SelfPlay
-#from value_policy_net.resnet import ResNet
+from value_policy_net.resnet import ResNet
 
 BLACK = 1
 WHITE = -1
