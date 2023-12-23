@@ -121,6 +121,7 @@ class GoGame:
         row = (pos[1] - PADDING + WIDTH // 2) // (WIDTH + MARGIN)
 
         if 0 <= row < BOARD_SIZE and 0 <= col < BOARD_SIZE:
+            print(f"move: row {row} col: {col}")
             _, self.board = self.utils.make_move(board=self.board, move=(row, col))
             self.passed_once = False
             self.print_winner()

@@ -1,12 +1,10 @@
 import numpy as np
 import operator
 import tensorflow as tf
-
 from tqdm import tqdm
-
 from Games.Go.go_board import GoBoard
 from Games.Go.go_utils import GoUtils
-#from self_play.mcts import MCTS
+from Models.mcts import MCTS
 #from self_play.self_play import SelfPlay
 from value_policy_net.resnet import ResNet
 

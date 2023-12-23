@@ -86,7 +86,7 @@ class GoGame:
                 c = (pos[0] - PADDING + WIDTH // 2) // (WIDTH + MARGIN)
                 r = (pos[1] - PADDING + WIDTH // 2) // (WIDTH + MARGIN)
 
-                if 0 <= r < BOARD_DIM and 0 <= c < BOARD_DIM:
+                if 0 <= r < BOARD_SIZE and 0 <= c < BOARD_SIZE:
                     is_valid, self.go_board = self.utils.make_move(board=self.go_board, move=(r, c))
                     if is_valid:
                         self.passed_once = False

@@ -1,7 +1,7 @@
 import torch
 
 import numpy as np
-import core.ctree.cytree as tree
+import ctree.cytree as tree
 
 from torch.cuda.amp import autocast as autocast
 
