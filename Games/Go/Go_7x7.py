@@ -3,8 +3,9 @@ import math
 import pathlib
 import numpy
 import torch
-from go_board import GoBoard
-from go_utils import GoUtils
+from .go_board import GoBoard
+from .go_utils import GoUtils
+from .abstract_game import AbstractGame
 
 
 class MuZeroConfig:
@@ -16,8 +17,7 @@ class MuZeroConfig:
         self.max_num_gpus = None  # Fix the maximum number of GPUs to use. It's usually faster to use a single GPU (set it to 1) if it has enough memory. None will use every GPUs available
 
         ### Game
-        self.observation_shape = (3, 7,
-                                  7)  # Dimensions of the game observation, must be 3 (channel, height, width). For a 1D array, please reshape it to (1, 1, length of array)
+        self.observation_shape = (3, 7, 7)  # Dimensions of the game observation, must be 3 (channel, height, width). For a 1D array, please reshape it to (1, 1, length of array)
         self.action_space = list(range(((7 * 7)+1)))  # Fixed list of all possible actions. You should only edit the length
         self.players = list(range(2))  # List of players. You should only edit the length
         self.stacked_observations = 0  # Number of previous observations and previous actions to add to the current observation
@@ -117,9 +117,98 @@ class MuZeroConfig:
         else:
             return 0.25
 
+
+class Game(AbstractGame):
+    """
+    Game wrapper.
+    """
+
+    def __init__(self, seed=None):
+        self.env = Go7x7()
+
+    def step(self, action):
+        """
+        Apply action to the game.
+
+        Args:
+            action : action of the action_space to take.
+
+        Returns:
+            The new observation, the reward and a boolean if the game has ended.
+        """
+        observation, reward, done = self.env.step(action)
+        return observation, reward, done
+
+    def to_play(self):
+        """
+        Return the current player.
+
+        Returns:
+            The current player, it should be an element of the players list in the config.
+        """
+        return self.env.to_play()
+
+    def legal_actions(self):
+        """
+        Should return the legal actions at each turn, if it is not available, it can return
+        the whole action space. At each turn, the game have to be able to handle one of returned actions.
+
+        For complex game where calculating legal moves is too long, the idea is to define the legal actions
+        equal to the action space but to return a negative reward if the action is illegal.
+
+        Returns:
+            An array of integers, subset of the action space.
+        """
+        return self.env.legal_actions()
+
+    def reset(self):
+        """
+        Reset the game for a new game.
+
+        Returns:
+            Initial observation of the game.
+        """
+        return self.env.reset()
+
+    def close(self):
+        """
+        Properly close the game.
+        """
+        pass
+
+    def render(self):
+        """
+        Display the game observation.
+        """
+        self.env.render()
+        input("Press enter to take a step ")
+
+    def human_to_action(self):
+        """
+        For multiplayer games, ask the user for a legal action
+        and return the corresponding action number.
+
+        Returns:
+            An integer from the action space.
+        """
+        valid = False
+        while not valid:
+            valid, action = self.env.human_input_to_action()
+        return action
+
+    def action_to_string(self, action):
+        """
+        Convert an action number to a string representing the action.
+        Args:
+            action_number: an integer from the action space.
+        Returns:
+            String representing the action.
+        """
+        return self.env.action_to_human_input(action)
+
 class Go7x7:
     def __init__(self):
-        self.board_size = 11
+        self.board_size = 7
         self.player = 1 # Black goes first
         self.board = GoBoard(board_dimension=self.board_size, player=self.player)
         self.utils = GoUtils
@@ -128,8 +217,8 @@ class Go7x7:
         return 0 if self.player == 1 else 1
 
     def reset(self):
-        self.board = numpy.zeros((self.board_size, self.board_size), dtype="int32")
         self.player = 1
+        self.board = GoBoard(board_dimension=self.board_size, player=self.player)
         return self.get_observation()
 
     def step(self, action):
@@ -154,7 +243,7 @@ class Go7x7:
         return numpy.array([board_player1, board_player2, board_to_play])
 
     def legal_actions(self):
-        # Pass (-1, -1) as a valid move
+        # Pass (-1, -1) or board_size**2 is a valid move
         legal = [self.board_size**2]
         for i in range(self.board_size):
             for j in range(self.board_size):
