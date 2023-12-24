@@ -104,5 +104,5 @@ class MuZero():
 
 
 if __name__ == '__main__':
-    muzero = MuZero(model_path="../models", restored=False)
+    muzero = MuZero(model_path="../Models", restored=False)
     muzero.train_nn(training_game_number=2000, simulation_number=300)
