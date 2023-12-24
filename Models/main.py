@@ -18,8 +18,8 @@ import trainer
 
 
 class MuZero:
-    def __init__(self, game_name, config=None):
-        self.Game = go_muzero_config.Game
+    def __init__(self):
+        self.Game = go_muzero_config.MuzeroGame()
         self.config = go_muzero_config.MuZeroConfig()
 
         if config:
@@ -29,7 +29,7 @@ class MuZero:
                         setattr(self.config, param, value)
                     else:
                         raise AttributeError(
-                            f"{game_name} config has no attribute '{param}'. Check the config file for the complete list of parameters.")
+                            f"The config has no attribute '{param}'. Check the config for the complete list of parameters.")
             else:
                 self.config = config
 
@@ -77,15 +77,10 @@ class MuZero:
     def logging_loop(self, num_gpus): # Keep track of the training performance.
         return
 
-    # ... (unchanged)
-
     def terminate_workers(self):
 
-    def test(
-            self, render=True, opponent=None, muzero_player=None, num_tests=1, num_gpus=0
-    ):
+    def test(self, render=True, opponent=None, muzero_player=None, num_tests=1, num_gpus=0):
 
-    # ... (unchanged)
 
     def load_model(self, checkpoint_path=None, replay_buffer_path=None):
         """
@@ -144,8 +139,6 @@ class MuZero:
         input("Press enter to close all plots")
         dm.close_all()
 
-
-#dont think we need this one
 def get_initial_weights(self, config):
     model = model.MuZeroNetwork(config)
     weights = model.get_weights()
@@ -153,7 +146,7 @@ def get_initial_weights(self, config):
     return weights, summary
 
 
-#Search for hyperparameters by launching parallel experiments.
+#Search for hyperparameters
 def hyperparameter_search(game_name, parametrization, budget, parallel_experiments, num_tests):
     pass
 
@@ -162,36 +155,11 @@ def load_model_menu(muzero, game_name):
     pass
 
 
-
 if __name__ == "__main__":
-    if len(sys.argv) == 2:
-        # Train directly with: python muzero.py cartpole
-        muzero = MuZero(sys.argv[1])
-        muzero.train()
-    elif len(sys.argv) == 3:
-        # Train directly with: python muzero.py cartpole '{"lr_init": 0.01}'
-        config = json.loads(sys.argv[2])
-        muzero = MuZero(sys.argv[1], config)
-        muzero.train()
-    else:
-        print("\nWelcome to MuZero! Here's a list of games:")
-        # Let the user pick a game
-        games = [
-            filename.stem
-            for filename in sorted(list((pathlib.Path.cwd() / "games").glob("*.py")))
-            if filename.name != "abstract_game.py"
-        ]
-        for i in range(len(games)):
-            print(f"{i}. {games[i]}")
-        choice = input("Enter a number to choose the game: ")
-        valid_inputs = [str(i) for i in range(len(games))]
-        while choice not in valid_inputs:
-            choice = input("Invalid input, enter a number listed above: ")
+    #initialise muzero
+    muzero = MuZero()
 
-        # Initialize MuZero
-        choice = int(choice)
-        game_name = games[choice]
-        muzero = MuZero(game_name)
+
 
         while True:
             # Configure running options
