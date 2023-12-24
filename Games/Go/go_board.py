@@ -19,7 +19,7 @@ class GoBoard():
             self.board_grid = board_grid
             self.game_history = game_history
         else:
-            self.board_grid = [[0 for i in range(board_dimension)] for y in range(board_dimension)]
+            self.board_grid = np.zeros((self.board_dimension,self.board_dimension), dtype="int32")
             self.game_history = []
 
     def flip_player(self):
