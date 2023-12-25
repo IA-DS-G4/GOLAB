@@ -125,41 +125,6 @@ def make_go_config() -> MuZeroConfig:
   return make_board_game_config(
       action_space_size=362, max_moves=722, dirichlet_alpha=0.03, lr_init=0.01)
 
-
-def make_chess_config() -> MuZeroConfig:
-  return make_board_game_config(
-      action_space_size=4672, max_moves=512, dirichlet_alpha=0.3, lr_init=0.1)
-
-
-def make_shogi_config() -> MuZeroConfig:
-  return make_board_game_config(
-      action_space_size=11259, max_moves=512, dirichlet_alpha=0.15, lr_init=0.1)
-
-
-def make_atari_config() -> MuZeroConfig:
-
-  def visit_softmax_temperature(num_moves, training_steps):
-    if training_steps < 500e3:
-      return 1.0
-    elif training_steps < 750e3:
-      return 0.5
-    else:
-      return 0.25
-
-  return MuZeroConfig(
-      action_space_size=18,
-      max_moves=27000,  # Half an hour at action repeat 4.
-      discount=0.997,
-      dirichlet_alpha=0.25,
-      num_simulations=50,
-      batch_size=1024,
-      td_steps=10,
-      num_actors=350,
-      lr_init=0.05,
-      lr_decay_steps=350e3,
-      visit_softmax_temperature_fn=visit_softmax_temperature)
-
-
 class Action(object):
 
   def __init__(self, index: int):

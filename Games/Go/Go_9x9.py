@@ -18,7 +18,7 @@ class MuZeroConfig:
 
         ### Game
         self.observation_shape = (3, 9, 9)  # Dimensions of the game observation, must be 3 (channel, height, width). For a 1D array, please reshape it to (1, 1, length of array)
-        self.action_space = list(range(((9 * 9)+1)))  # Fixed list of all possible actions. You should only edit the length
+        self.action_space = list(range(-1,(9 * 9)))  # Fixed list of all possible actions. You should only edit the length
         self.players = list(range(2))  # List of players. You should only edit the length
         self.stacked_observations = 0  # Number of previous observations and previous actions to add to the current observation
 
@@ -118,94 +118,6 @@ class MuZeroConfig:
             return 0.25
 
 
-class Game(AbstractGame):
-    """
-    Game wrapper.
-    """
-
-    def __init__(self, seed=None):
-        self.env = Go9x9()
-
-    def step(self, action):
-        """
-        Apply action to the game.
-
-        Args:
-            action : action of the action_space to take.
-
-        Returns:
-            The new observation, the reward and a boolean if the game has ended.
-        """
-        observation, reward, done = self.env.step(action)
-        return observation, reward, done
-
-    def to_play(self):
-        """
-        Return the current player.
-
-        Returns:
-            The current player, it should be an element of the players list in the config.
-        """
-        return self.env.to_play()
-
-    def legal_actions(self):
-        """
-        Should return the legal actions at each turn, if it is not available, it can return
-        the whole action space. At each turn, the game have to be able to handle one of returned actions.
-
-        For complex game where calculating legal moves is too long, the idea is to define the legal actions
-        equal to the action space but to return a negative reward if the action is illegal.
-
-        Returns:
-            An array of integers, subset of the action space.
-        """
-        return self.env.legal_actions()
-
-    def reset(self):
-        """
-        Reset the game for a new game.
-
-        Returns:
-            Initial observation of the game.
-        """
-        return self.env.reset()
-
-    def close(self):
-        """
-        Properly close the game.
-        """
-        pass
-
-    def render(self):
-        """
-        Display the game observation.
-        """
-        self.env.render()
-        input("Press enter to take a step ")
-
-    def human_to_action(self):
-        """
-        For multiplayer games, ask the user for a legal action
-        and return the corresponding action number.
-
-        Returns:
-            An integer from the action space.
-        """
-        valid = False
-        while not valid:
-            valid, action = self.env.human_input_to_action()
-        return action
-
-    def action_to_string(self, action):
-        """
-        Convert an action number to a string representing the action.
-        Args:
-            action_number: an integer from the action space.
-        Returns:
-            String representing the action.
-        """
-        return self.env.action_to_human_input(action)
-
 class Go9x9:
     def __init__(self):
         self.board_size = 9
@@ -225,7 +137,7 @@ class Go9x9:
         r = numpy.floor(action / self.board_size)
         c = action % self.board_size
         move = (r,c)
-        if action == (self.board_size**2):
+        if action == -1:
             move = (-1,-1)
         self.utils.make_move(board=self.board,move=move)
         done = self.utils.is_game_finished(board=self.board)
@@ -244,7 +156,7 @@ class Go9x9:
 
     def legal_actions(self):
         # Pass (-1, -1) as a valid move
-        legal = [self.board_size**2]
+        legal = [-1]
         for i in range(self.board_size):
             for j in range(self.board_size):
                 if self.utils.is_valid_move(board=self.board,move=(i,j)):

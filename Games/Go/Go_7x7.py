@@ -3,9 +3,9 @@ import math
 import pathlib
 import numpy
 import torch
-from .go_board import GoBoard
-from .go_utils import GoUtils
-from .abstract_game import AbstractGame
+from go_board import GoBoard
+from go_utils import GoUtils
+from abstract_game import AbstractGame
 
 
 class MuZeroConfig:
@@ -18,7 +18,7 @@ class MuZeroConfig:
 
         ### Game
         self.observation_shape = (3, 7, 7)  # Dimensions of the game observation, must be 3 (channel, height, width). For a 1D array, please reshape it to (1, 1, length of array)
-        self.action_space = list(range(((7 * 7)+1)))  # Fixed list of all possible actions. You should only edit the length
+        self.action_space = list(range(-1,(7 * 7)))  # Fixed list of all possible actions. You should only edit the length
         self.players = list(range(2))  # List of players. You should only edit the length
         self.stacked_observations = 0  # Number of previous observations and previous actions to add to the current observation
 
@@ -117,6 +117,65 @@ class MuZeroConfig:
         else:
             return 0.25
 
+class Go7x7:
+    def __init__(self):
+        self.board_size = 7
+        self.player = 1 # Black goes first
+        self.board = GoBoard(board_dimension=self.board_size, player=self.player)
+        self.utils = GoUtils()
+
+    def to_play(self):
+        return 0 if self.player == 1 else 1
+
+    def reset(self):
+        self.player = 1
+        self.board = GoBoard(board_dimension=self.board_size, player=self.player)
+        return self.get_observation()
+
+    def step(self, action):
+        r = numpy.floor(action / self.board_size)
+        c = action % self.board_size
+        move = (r,c)
+        if action == -1:
+            move = (-1,-1)
+        self.utils.make_move(board=self.board,move=move)
+        done = self.utils.is_game_finished(board=self.board)
+        if done:
+            reward = 1 if self.utils.evaluate_winner(board_grid=self.board.board_grid)[0] == self.player else -1
+        else:
+            reward = 0
+        self.player *= -1
+        return self.get_observation(), reward, done
+
+    def get_observation(self):
+        board_player1 = numpy.where(self.board.board_grid == 1, 1.0, 0.0)
+        board_player2 = numpy.where(self.board.board_grid == -1, 1.0, 0.0)
+        board_to_play = numpy.full((self.board_size,self.board_size), self.player, dtype="int32")
+        return numpy.array([board_player1, board_player2, board_to_play])
+
+    def legal_actions(self):
+        # Pass = -1 is a valid move
+        legal = [-1]
+        for i in range(self.board_size):
+            for j in range(self.board_size):
+                if self.utils.is_valid_move(board=self.board,move=(i,j)):
+                    legal.append(i * self.board_size + j)
+        return legal
+
+    def is_finished(self):
+        return self.utils.is_game_finished(board=self.board)
+
+    def render(self):
+        pass
+
+    def human_input_to_action(self):
+        pass
+        return 1
+
+    def action_to_human_input(self, action):
+        pass
+        return 1
+
 
 class Game(AbstractGame):
     """
@@ -205,63 +264,3 @@ class Game(AbstractGame):
             String representing the action.
         """
         return self.env.action_to_human_input(action)
-
-class Go7x7:
-    def __init__(self):
-        self.board_size = 7
-        self.player = 1 # Black goes first
-        self.board = GoBoard(board_dimension=self.board_size, player=self.player)
-        self.utils = GoUtils
-
-    def to_play(self):
-        return 0 if self.player == 1 else 1
-
-    def reset(self):
-        self.player = 1
-        self.board = GoBoard(board_dimension=self.board_size, player=self.player)
-        return self.get_observation()
-
-    def step(self, action):
-        r = numpy.floor(action / self.board_size)
-        c = action % self.board_size
-        move = (r,c)
-        if action == (self.board_size**2):
-            move = (-1,-1)
-        self.utils.make_move(board=self.board,move=move)
-        done = self.utils.is_game_finished(board=self.board)
-        if done:
-            reward = 1 if self.utils.evaluate_winner(board_grid=self.board.board_grid)[0] == self.player else -1
-        else:
-            reward = 0
-        self.player *= -1
-        return self.get_observation(), reward, done
-
-    def get_observation(self):
-        board_player1 = numpy.where(self.board.board_grid == 1, 1.0, 0.0)
-        board_player2 = numpy.where(self.board.board_grid == -1, 1.0, 0.0)
-        board_to_play = numpy.full((self.board_size,self.board_size), self.player, dtype="int32")
-        return numpy.array([board_player1, board_player2, board_to_play])
-
-    def legal_actions(self):
-        # Pass (-1, -1) or board_size**2 is a valid move
-        legal = [self.board_size**2]
-        for i in range(self.board_size):
-            for j in range(self.board_size):
-                if self.utils.is_valid_move(board=self.board,move=(i,j)):
-                    legal.append(i * self.board_size + j)
-        return legal
-
-    def is_finished(self):
-        return self.utils.is_game_finished(board=self.board)
-
-    def render(self):
-        pass
-
-    def human_input_to_action(self):
-        pass
-        return 1
-
-    def action_to_human_input(self, action):
-        pass
-        return 1
-
