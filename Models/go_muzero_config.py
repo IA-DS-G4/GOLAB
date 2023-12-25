@@ -154,105 +154,62 @@ class MuzeroGame:
     def action_to_string(self, action):
         return self.env.action_to_human_input(action)
 
-class Go:
+
+class Go7x7:
     def __init__(self):
         self.board_size = 7
-        self.board = np.zeros((self.board_size, self.board_size), dtype="int32")
-        self.player = 1
-        self.board_markers = [chr(x) for x in range(ord("A"), ord("A") + self.board_size)]
+        self.player = 1 # Black goes first
+        self.board = GoBoard(board_dimension=self.board_size, player=self.player)
+        self.utils = GoUtils()
 
     def to_play(self):
         return 0 if self.player == 1 else 1
 
     def reset(self):
-        self.board = np.zeros((self.board_size, self.board_size), dtype="int32")
         self.player = 1
+        self.board = GoBoard(board_dimension=self.board_size, player=self.player)
         return self.get_observation()
 
     def step(self, action):
-        x = math.floor(action / self.board_size)
-        y = action % self.board_size
-        self.board[x][y] = self.player
-
-        done = self.is_finished()
-
-        reward = 1 if done else 0
-
+        r = numpy.floor(action / self.board_size)
+        c = action % self.board_size
+        move = (r,c)
+        if action == -1:
+            move = (-1,-1)
+        self.utils.make_move(board=self.board,move=move)
+        done = self.utils.is_game_finished(board=self.board)
+        if done:
+            reward = 1 if self.utils.evaluate_winner(board_grid=self.board.board_grid)[0] == self.player else -1
+        else:
+            reward = 0
         self.player *= -1
-
         return self.get_observation(), reward, done
 
     def get_observation(self):
-        board_player1 = np.where(self.board == 1, 1.0, 0.0)
-        board_player2 = np.where(self.board == -1, 1.0, 0.0)
-        board_to_play = np.full((7, 7), self.player, dtype="int32")
-        return np.array([board_player1, board_player2, board_to_play])
+        board_player1 = numpy.where(self.board.board_grid == 1, 1.0, 0.0)
+        board_player2 = numpy.where(self.board.board_grid == -1, 1.0, 0.0)
+        board_to_play = numpy.full((self.board_size,self.board_size), self.player, dtype="int32")
+        return numpy.array([board_player1, board_player2, board_to_play])
 
     def legal_actions(self):
-        legal = []
+        # Pass = -1 is a valid move
+        legal = [-1]
         for i in range(self.board_size):
             for j in range(self.board_size):
-                if self.board[i][j] == 0:
+                if self.utils.is_valid_move(board=self.board,move=(i,j)):
                     legal.append(i * self.board_size + j)
         return legal
 
     def is_finished(self):
-        has_legal_actions = False
-        directions = ((1, -1), (1, 0), (1, 1), (0, 1))
-        for i in range(self.board_size):
-            for j in range(self.board_size):
-                if self.board[i][j] == 0:
-                    has_legal_actions = True
-                    continue
-                player = self.board[i][j]
-                for d in directions:
-                    x, y = i, j
-                    count = 0
-                    for _ in range(5):
-                        if (x not in range(self.board_size)) or (y not in range(self.board_size)):
-                            break
-                        if self.board[x][y] != player:
-                            break
-                        x += d[0]
-                        y += d[1]
-                        count += 1
-                        if count == 5:
-                            return True
-        return not has_legal_actions
+        return self.utils.is_game_finished(board=self.board)
 
     def render(self):
-        marker = "  "
-        for i in range(self.board_size):
-            marker = marker + self.board_markers[i] + " "
-        print(marker)
-        for row in range(self.board_size):
-            print(chr(ord("A") + row), end=" ")
-            for col in range(self.board_size):
-                ch = self.board[row][col]
-                if ch == 0:
-                    print(".", end=" ")
-                elif ch == 1:
-                    print("X", end=" ")
-                elif ch == -1:
-                    print("O", end=" ")
-            print()
+        pass
 
     def human_input_to_action(self):
-        human_input = input("Enter an action: ")
-        if (
-                len(human_input) == 2
-                and human_input[0] in self.board_markers
-                and human_input[1] in self.board_markers
-        ):
-            x = ord(human_input[0]) - 65
-            y = ord(human_input[1]) - 65
-            if self.board[x][y] == 0:
-                return True, x * self.board_size + y
-        return False, -1
+        pass
+        return 1
 
     def action_to_human_input(self, action):
-        x = math.floor(action / self.board_size)
-        y = action % self.board_size
-        x = chr(x + 65)
-        y = chr(y + 65)
-        return x + y
+        pass
+        return 1

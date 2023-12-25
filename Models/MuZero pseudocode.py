@@ -38,7 +38,7 @@ class MinMaxStats(object):
     return value
 
 
-class MuZeroConfig(object):
+class MuZeroConfig:
 
   def __init__(self,
                action_space_size: int,
@@ -125,7 +125,7 @@ def make_go_config() -> MuZeroConfig:
   return make_board_game_config(
       action_space_size=362, max_moves=722, dirichlet_alpha=0.03, lr_init=0.01)
 
-class Action(object):
+class Action:
 
   def __init__(self, index: int):
     self.index = index
@@ -140,11 +140,11 @@ class Action(object):
     return self.index > other.index
 
 
-class Player(object):
+class Player:
   pass
 
 
-class Node(object):
+class Node:
 
   def __init__(self, prior: float):
     self.visit_count = 0
@@ -190,14 +190,14 @@ class ActionHistory(object):
     return Player()
 
 
-class Environment(object):
+class Environment:
   """The environment MuZero is interacting with."""
 
   def step(self, action):
     pass
 
 
-class Game(object):
+class Game:
   """A single episode of interaction with the environment."""
 
   def __init__(self, action_space_size: int, discount: float):
@@ -272,7 +272,7 @@ class Game(object):
     return ActionHistory(self.history, self.action_space_size)
 
 
-class ReplayBuffer(object):
+class ReplayBuffer:
 
   def __init__(self, config: MuZeroConfig):
     self.window_size = config.window_size
@@ -326,7 +326,7 @@ class Network(object):
     return 0
 
 
-class SharedStorage(object):
+class SharedStorage:
 
   def __init__(self):
     self._networks = {}

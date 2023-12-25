@@ -35,18 +35,15 @@ class MCTS:
             root_predicted_value = None
         else:
             root = Node(0)
-            observation = (
-                torch.tensor(observation)
+            observation = (torch.tensor(observation)
                 .float()
                 .unsqueeze(0)
-                .to(next(model.parameters()).device)
-            )
-            (
-                root_predicted_value,
+                .to(next(model.parameters()).device)) # turn th np_array to tensor
+            (root_predicted_value,
                 reward,
                 policy_logits,
                 hidden_state,
-            ) = model.initial_inference(observation)
+            ) = model.initial_inference(observation) # give observation to model and get policy etc.
             root_predicted_value = model.support_to_scalar(
                 root_predicted_value, self.config.support_size
             ).item()
