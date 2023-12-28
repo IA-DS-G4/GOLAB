@@ -22,7 +22,7 @@ from tensorflow.python.keras.layers import (
 
 
 '''
-Impementation of neural network in muzero algorithm
+Impementation of neural network in muzero algorithm for 7x7 game board
 
 There are 4 networks:
 - The Representation network 
@@ -47,41 +47,74 @@ class Network:
 
 
         #ResNet50V2
-        self.representation = keras.Sequential([Dense(config.hidden_layer_size, activation='relu'),
-                                                Dense(config.hidden_layer_size)])
+        self.representation = keras.Sequential(
+                    [
+                        Dense(config.observation_space_size, activation="relu", name="layer1"),
+                        Dense(512, activation="relu", name="layer2"),
+                        Dense(1024, activation="relu", name="layer3"),
+                        Dense(512, activation="relu", name="layer4"),
+                        Dense(config.hidden_layer_size, name="layer5"),
+                    ]
+                )
+
 
         #ResNet50V2 + fully connected layers
-        self.value = keras.Sequential([Dense(config.hidden_layer_size, activation='relu'),
-                                       Dense(1, activation='relu')])
+        self.value = keras.Sequential(
+                    [
+                        Dense(config.observation_space_size, activation="relu", name="layer1"),
+                        Dense(512, activation="relu", name="layer2"),
+                        Dense(1024, activation="relu", name="layer3"),
+                        Dense(512, activation="relu", name="layer4"),
+                        Dense(256, activation="relu", name="layer5"),
+                        Dense(1, name="layer6"),
+                    ]
+                )
 
+        # #resnet + fully connected layers
+        # #input size should be given in the form (x,y, channels) with channels 3 because resnet takes rgb images
+        # model = ResNet50V2(include_top=False,input_tensor=None,input_shape=config.hidden_layer_size,classifier_activation="softmax")
+        # x = model.output
+        # x = GlobalAveragePooling2D()(x)
+        # x = Dense(1024, activation='relu')(x)
+        # x = Dense(512, activation='relu')(x)
+        # preds = Dense(config.action_space_size, activation='softmax')(x)  # FC-layer
+        # self.policy = Model(inputs=model.input, outputs=preds)
 
-        #resnet + fully connected layers
-        #input size should be given in the form (x,y, channels) with channels 3 because resnet takes rgb images
-        model = ResNet50V2(include_top=False,input_tensor=None,input_shape=config.hidden_layer_size,classifier_activation="softmax")
-        x = model.output
-        x = GlobalAveragePooling2D()(x)
-        x = Dense(1024, activation='relu')(x)
-        x = Dense(512, activation='relu')(x)
-        preds = Dense(config.action_space_size, activation='softmax')(x)  # FC-layer
-        self.policy = Model(inputs=model.input, outputs=preds)
-
+        self.policy  = keras.Sequential(
+                    [
+                        Dense(config.observation_space_size, activation="relu", name="layer1"),
+                        Dense(512, activation="relu", name="layer2"),
+                        Dense(1024, activation="relu", name="layer3"),
+                        Dense(512, activation="relu", name="layer4"),
+                        Dense(config.action_space_size, name="layer5", activation='softmax'),
+                    ]
+                )
 
         #resnet
-        self.reward = keras.Sequential([Dense(config.hidden_layer_size, activation='relu'),
-                                        Dense(1, activation='relu')])
+        self.reward = keras.Sequential(
+                    [
+                        Dense(config.observation_space_size, activation="relu", name="layer1"),
+                        Dense(512, activation="relu", name="layer2"),
+                        Dense(1024, activation="relu", name="layer3"),
+                        Dense(512, activation="relu", name="layer4"),
+                        Dense(256, activation="relu", name="layer5"),
+                        Dense(1, name="layer6"),
+                    ]
+                )
 
         #MLP
         self.dynamics = keras.Sequential(
                     [
-                        Dense(config.hidden_layer_size, activation="relu", name="layer1"),
-                        Dense(config.hidden_layer_size, activation="relu", name="layer2"),
-                        Dense(config.hidden_layer_size, name="layer3"),
+                        Dense(config.observation_space_size, activation="relu", name="layer1"),
+                        Dense(512, activation="relu", name="layer2"),
+                        Dense(1024, activation="relu", name="layer3"),
+                        Dense(512, activation="relu", name="layer4"),
+                        Dense(config.hidden_layer_size, name="layer5"),
                     ]
                 )
 
 
         self.tot_training_steps = 0
-
         self.action_space_size = config.action_space_size
 
     def initial_inference(self, image):
