@@ -93,7 +93,7 @@ class SelfPlay:
     def play_game(
             self, temperature, temperature_threshold, render, opponent, muzero_player
     ):
-        game_history = GameHistory()
+        game_history = ActionHistory(self.config.action_space)
         observation = self.game.reset()
         game_history.action_history.append(0)
         game_history.observation_history.append(observation)
@@ -212,12 +212,12 @@ class SelfPlay:
             action = np.random.choice(actions, p=visit_count_distribution)
 
 
-class GameHistory:
+class ActionHistory:
     """
     Store only usefull information of a self-play game.
     """
 
-    def __init__(self):
+    def __init__(self, action_space_size):
         self.observation_history = []
         self.action_history = []
         self.reward_history = []
@@ -225,9 +225,29 @@ class GameHistory:
         self.child_visits = []
         self.root_values = []
         self.reanalysed_predicted_root_values = None
+        self.history = []
+        self.action_space_size = action_space_size
+
         # For PER
         self.priorities = None
         self.game_priority = None
+
+    # def clone(self):
+    #     return ActionHistory(self.history, self.action_space_size)
+    #
+    # def add_action(self, action):
+    #     self.history.append(action)
+    #
+    # def last_action(self):
+    #     return self.history[-1]
+    #
+    # def action_space(self):
+    #     return [Action(i) for i in range(self.action_space_size)]
+    #
+    # def to_play(self):
+    #     return Player(1)
+
+
 
     def store_search_statistics(self, root, action_space):
         # Turn visit count from root into a policy
@@ -261,25 +281,25 @@ class GameHistory:
             range(index - num_stacked_observations, index)
         ):
             if 0 <= past_observation_index:
-                previous_observation = np.concatenate(
+                previous_observation = numpy.concatenate(
                     (
                         self.observation_history[past_observation_index],
                         [
-                            np.ones_like(stacked_observations[0])
+                            numpy.ones_like(stacked_observations[0])
                             * self.action_history[past_observation_index + 1]
                             / action_space_size
                         ],
                     )
                 )
             else:
-                previous_observation = np.concatenate(
+                previous_observation = numpy.concatenate(
                     (
-                        np.zeros_like(self.observation_history[index]),
-                        [np.zeros_like(stacked_observations[0])],
+                        numpy.zeros_like(self.observation_history[index]),
+                        [numpy.zeros_like(stacked_observations[0])],
                     )
                 )
 
-            stacked_observations = np.concatenate(
+            stacked_observations = numpy.concatenate(
                 (stacked_observations, previous_observation)
             )
 
