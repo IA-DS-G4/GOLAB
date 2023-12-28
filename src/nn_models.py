@@ -2,6 +2,8 @@ import tensorflow as tf
 import keras
 import numpy as np
 from tensorflow.python.keras.layers import Input, Dense
+from mcts import Action, Player
+from typing import NamedTuple, Dict, List, Optional
 
 
 '''
@@ -15,13 +17,12 @@ There are 4 networks:
 '''
 
 
-class NetworkOutput:
-    def __init__(self, value, reward, policy_logits, policy_tensor, hidden_state):
-        self.value = value
-        self.reward = reward
-        self.policy_logits = policy_logits
-        self.policy_tensor = policy_tensor
-        self.hidden_state = hidden_state
+class NetworkOutput(typing.NamedTuple):
+    value: float
+    reward: float
+    policy_logits: Dict[Action, float]
+    policy_tensor: List[float]
+    hidden_state: List[float]
 
 
 class Network:
@@ -29,18 +30,20 @@ class Network:
     def __init__(self, config):
         # regularizer = L2(config.weight_decay)
 
+
+        #resnet
         self.representation = keras.Sequential([Dense(config.hidden_layer_size, activation='relu'),
                                                 Dense(config.hidden_layer_size)])
-
+        #MLP
         self.value = keras.Sequential([Dense(config.hidden_layer_size, activation='relu'),
                                        Dense(1, activation='relu')])
-
+        #MLP
         self.policy = keras.Sequential([Dense(config.hidden_layer_size, activation='relu'),
                                         Dense(config.action_space_size, activation='softmax')])
-
+        #MLP
         self.reward = keras.Sequential([Dense(config.hidden_layer_size, activation='relu'),
                                         Dense(1, activation='relu')])
-
+        #resnet
         self.dynamics = keras.Sequential([Dense(config.hidden_layer_size, activation='relu'),
                                           Dense(config.hidden_layer_size)])
 
@@ -60,7 +63,7 @@ class Network:
 
         return NetworkOutput(value, reward, {Action(a): policy_p[a] for a in range(len(policy_p))}, policy, hidden_state)
 
-    def recurrent_inference(self, hidden_state, action) -> NetworkOutput:
+    def recurrent_inference(self, hidden_state, action):
         # dynamics + prediction function
 
         a = hidden_state.numpy()[0]
@@ -77,11 +80,7 @@ class Network:
         policy = self.policy(next_hidden_state)
         policy_p = policy[0]
 
-        return NetworkOutput(value,
-                             reward,
-                             {Action(a): policy_p[a] for a in range(len(policy_p))},
-                             policy,
-                             next_hidden_state)
+        return NetworkOutput(value, reward, {Action(a): policy_p[a] for a in range(len(policy_p))}, policy, next_hidden_state)
 
     def get_weights_func(self):
         # Returns the weights of this network.
