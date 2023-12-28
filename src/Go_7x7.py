@@ -9,7 +9,23 @@ from abstract_game import AbstractGame
 
 
 class MuZeroConfig:
-    def __init__(self):
+
+    def __init__(self,
+                 action_space_size: int,
+                 observation_space_size: int,
+                 max_moves: int,
+                 discount: float,
+                 dirichlet_alpha: float,
+                 num_simulations: int,
+                 batch_size: int,
+                 td_steps: int,
+                 num_actors: int,
+                 lr_init: float,
+                 lr_decay_steps: float,
+                 training_episodes: int,
+                 hidden_layer_size: int,
+                 visit_softmax_temperature_fn,
+                 known_bounds: Optional[KnownBounds] = None):
         # fmt: off
         # More information is available here: https://github.com/werner-duvaud/muzero-general/wiki/Hyperparameter-Optimization
 
@@ -21,102 +37,96 @@ class MuZeroConfig:
         self.action_space = list(range(-1,(7 * 7)))  # Fixed list of all possible actions. You should only edit the length
         self.players = list(range(2))  # List of players. You should only edit the length
         self.stacked_observations = 0  # Number of previous observations and previous actions to add to the current observation
-        self.action_space_size = 7 * 7
-
-        # Evaluate
-        self.muzero_player = 0  # Turn Muzero begins to play (0: MuZero plays first, 1: MuZero plays second)
-        self.opponent = "random"  # Hard coded agent that MuZero faces to assess his progress in multiplayer games. It doesn't influence training. None, "random" or "expert" if implemented in the Game class
+        self.action_space_size = 7*7
 
         ### Self-Play
-        self.num_workers = 2  # Number of simultaneous threads/workers self-playing to feed the replay buffer
-        self.selfplay_on_gpu = False
-        self.max_moves = 121  # Maximum number of moves if game is not finished before
-        self.num_simulations = 400  # Number of future moves self-simulated
-        self.discount = 1  # Chronological discount of the reward
-        self.temperature_threshold = None  # Number of moves before dropping the temperature given by visit_softmax_temperature_fn to 0 (ie selecting the best action). If None, visit_softmax_temperature_fn is used every time
+        self.action_space_size = len(self.action_space)
+        self.observation_space_size = 7*7
+        self.num_actors = 2
 
-        # Root prior exploration noise
-        self.root_dirichlet_alpha = 0.3
+        self.visit_softmax_temperature_fn = visit_softmax_temperature_fn
+        self.max_moves = max_moves
+        self.num_simulations = num_simulations
+        self.discount = discount
+
+        # Root prior exploration noise.
+        self.root_dirichlet_alpha = dirichlet_alpha
         self.root_exploration_fraction = 0.25
 
         # UCB formula
         self.pb_c_base = 19652
         self.pb_c_init = 1.25
 
-        ### Network
-        self.network = "resnet"  # "resnet" / "fullyconnected"
-        self.support_size = 10  # Value and reward are scaled (with almost sqrt) and encoded on a vector with a range of -support_size to support_size. Choose it so that support_size <= sqrt(max(abs(discounted reward)))
-
-        # Residual Network
-        self.downsample = False  # Downsample observations before representation network, False / "CNN" (lighter) / "resnet" (See paper appendix Network Architecture)
-        self.blocks = 6  # Number of blocks in the ResNet
-        self.channels = 128  # Number of channels in the ResNet
-        self.reduced_channels_reward = 2  # Number of channels in reward head
-        self.reduced_channels_value = 2  # Number of channels in value head
-        self.reduced_channels_policy = 4  # Number of channels in policy head
-        self.resnet_fc_reward_layers = [64]  # Define the hidden layers in the reward head of the dynamic network
-        self.resnet_fc_value_layers = [64]  # Define the hidden layers in the value head of the prediction network
-        self.resnet_fc_policy_layers = [64]  # Define the hidden layers in the policy head of the prediction network
-
-        # Fully Connected Network
-        self.encoding_size = 32
-        self.fc_representation_layers = []  # Define the hidden layers in the representation network
-        self.fc_dynamics_layers = [64]  # Define the hidden layers in the dynamics network
-        self.fc_reward_layers = [64]  # Define the hidden layers in the reward network
-        self.fc_value_layers = []  # Define the hidden layers in the value network
-        self.fc_policy_layers = []  # Define the hidden layers in the policy network
+        # If we already have some information about which values occur in the
+        # environment, we can use them to initialize the rescaling.
+        # This is not strictly necessary, but establishes identical behaviour to
+        # AlphaZero in board games.
+        self.known_bounds = known_bounds
 
         ### Training
-        self.results_path = pathlib.Path(__file__).resolve().parents[1] / "results" / pathlib.Path(
-            __file__).stem / datetime.datetime.now().strftime(
-            "%Y-%m-%d--%H-%M-%S")  # Path to store the model weights and TensorBoard logs
-        self.save_model = True  # Save the checkpoint in results_path as model.checkpoint
-        self.training_steps = 10000  # Total number of training steps (ie weights update according to a batch)
-        self.batch_size = 512  # Number of parts of games to train on at each training step
-        self.checkpoint_interval = 50  # Number of training steps before using the model for self-playing
-        self.value_loss_weight = 1  # Scale the value loss to avoid overfitting of the value function, paper recommends 0.25 (See paper appendix Reanalyze)
-        self.train_on_gpu = torch.cuda.is_available()  # Train on GPU if available
+        self.training_steps = int(500e3)
+        self.checkpoint_interval = int(1e3)
+        self.window_size = int(1000)
+        self.batch_size = batch_size
+        self.num_unroll_steps = 500
+        self.td_steps = td_steps
 
-        self.optimizer = "SGD"  # "Adam" or "SGD". Paper uses SGD
-        self.weight_decay = 1e-4  # L2 weights regularization
-        self.momentum = 0.9  # Used only if optimizer is SGD
+        self.weight_decay = 1e-4
+        self.momentum = 0.9
+
+        self.training_episodes = training_episodes
+
+        self.hidden_layer_size = hidden_layer_size
 
         # Exponential learning rate schedule
-        self.lr_init = 0.002  # Initial learning rate
-        self.lr_decay_rate = 0.9  # Set it to 1 to use a constant learning rate
-        self.lr_decay_steps = 10000
+        self.lr_init = lr_init
+        self.lr_decay_rate = 0.1
+        self.lr_decay_steps = lr_decay_steps
 
-        ### Replay Buffer
-        self.replay_buffer_size = 10000  # Number of self-play games to keep in the replay buffer
-        self.num_unroll_steps = 121  # Number of game moves to keep for every batch element
-        self.td_steps = 121  # Number of steps in the future to take into account for calculating the target value
-        self.PER = True  # Prioritized Replay (See paper appendix Training), select in priority the elements in the replay buffer which are unexpected for the network
-        self.PER_alpha = 0.5  # How much prioritization is used, 0 corresponding to the uniform case, paper suggests 1
+    def new_game(self):
+        return Go7x7
 
-        # Reanalyze (See paper appendix Reanalyse)
-        self.use_last_model_value = False  # Use the last model to provide a fresher, stable n-step value (See paper appendix Reanalyze)
-        self.reanalyse_on_gpu = False
 
-        ### Adjust the self play / training ratio to avoid over/underfitting
-        self.self_play_delay = 0  # Number of seconds to wait after each played game
-        self.training_delay = 0  # Number of seconds to wait after each training step
-        self.ratio = 1  # Desired training steps per self played step ratio. Equivalent to a synchronous version, training can take much longer. Set it to None to disable it
-        # fmt: on
+class Go7x7config(MuZeroConfig):
+    def new_game(self):
+        return Go7x7(self.action_space_size, self.discount)
+def make_Go7x7_config() -> MuZeroConfig:
+    def visit_softmax_temperature(num_moves, training_steps):
 
-    def visit_softmax_temperature_fn(self, trained_steps):
-        """
-        Parameter to alter the visit count distribution to ensure that the action selection becomes greedier as training progresses.
-        The smaller it is, the more likely the best action (ie with the highest visit count) is chosen.
+        # higher temperature higher exploration
 
-        Returns:
-            Positive float.
-        """
-        if trained_steps < 0.5 * self.training_steps:
-            return 1.0
-        elif trained_steps < 0.75 * self.training_steps:
+        if training_steps < 100:
+            return 3
+        elif training_steps < 125:
+            return 2
+        elif training_steps < 150:
+            return 1
+        elif training_steps < 175:
             return 0.5
+        elif training_steps < 200:
+            return 0.250
+        elif training_steps < 225:
+            return 0.125
+        elif training_steps < 250:
+            return 0.075
         else:
-            return 0.25
+            return 0.001
+
+    return Go7x7config(action_space_size=2,
+                          observation_space_size=4,
+                          max_moves=500,
+                          discount=0.997,
+                          dirichlet_alpha=0.25,
+                          num_simulations=150,
+                          batch_size=100,
+                          td_steps=7,
+                          num_actors=1,
+                          lr_init=0.0001,
+                          lr_decay_steps=5000,
+                          training_episodes=225,
+                          hidden_layer_size=32,
+                          visit_softmax_temperature_fn=visit_softmax_temperature)
+
 
 class Go7x7:
     def __init__(self):
@@ -177,40 +187,3 @@ class Go7x7:
         pass
         return 1
 
-
-
-#dont really  know why and where we need these wrappers but i put them here for now
-class Action(object):
-
-    def __init__(self, index: int):
-        self.index = index
-
-    def __hash__(self):
-        return self.index
-
-    def __eq__(self, other):
-        return self.index == other.index
-
-    def __gt__(self, other):
-        return self.index > other.index
-
-    def __str__(self):
-        return str(self.index)
-
-
-class Player(object):
-
-    def __init__(self, index: int):
-        self.index = index
-
-    def __hash__(self):
-        return self.index
-
-    def __eq__(self, other):
-        return self.index == other.index
-
-    def __gt__(self, other):
-        return self.index > other.index
-
-    def __str__(self):
-        return str(self.index)
