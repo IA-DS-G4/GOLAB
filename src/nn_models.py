@@ -3,6 +3,7 @@ import keras
 import numpy as np
 from tensorflow.python.keras.layers import Input, Dense
 from mcts import Action, Player
+import typing
 from typing import NamedTuple, Dict, List, Optional
 from tensorflow.python.keras.applications.resnet_v2 import ResNet50V2
 from tensorflow.python.keras.models import Sequential, Model
@@ -18,7 +19,6 @@ from tensorflow.python.keras.layers import (
     Activation,
     GlobalAveragePooling2D,
 )
-
 
 
 '''
