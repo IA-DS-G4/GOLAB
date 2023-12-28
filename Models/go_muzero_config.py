@@ -117,7 +117,7 @@ class MuZeroConfig:
             return 0.25
 
 
-#muzero class serves as wrappper for the go game environment
+#Example_code class serves as wrappper for the go game environment
 class MuzeroGame:
     def __init__(self, seed=None):
         self.env = Go()

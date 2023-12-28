@@ -130,5 +130,5 @@ def load_model_menu(muzero, game_name):
 
 
 if __name__ == "__main__":
-    #initialise muzero
+    #initialise Example_code
     muzero = MuZero()

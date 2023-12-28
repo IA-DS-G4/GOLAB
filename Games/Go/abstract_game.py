@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 
 class AbstractGame(ABC):
     """
-    Inherit this class for muzero to play
+    Inherit this class for Example_code to play
     """
 
     @abstractmethod

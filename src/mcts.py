@@ -3,6 +3,90 @@ import numpy
 import torch
 import model
 import ctree.cytree as tree
+from typing import Dict, List, Optional
+
+
+class Action(object):
+
+    def __init__(self, index: int):
+        self.index = index
+
+    def __hash__(self):
+        return self.index
+
+    def __eq__(self, other):
+        return self.index == other.index
+
+    def __gt__(self, other):
+        return self.index > other.index
+
+    def __str__(self):
+        return str(self.index)
+
+
+class Player(object):
+
+    def __init__(self, index: int):
+        self.index = index
+
+    def __hash__(self):
+        return self.index
+
+    def __eq__(self, other):
+        return self.index == other.index
+
+    def __gt__(self, other):
+        return self.index > other.index
+
+    def __str__(self):
+        return str(self.index)
+
+class ActionHistory(object):
+    """Simple history container used inside the search.
+       Only used to keep track of the actions executed.
+    """
+
+    def __init__(self, history: List[Action], action_space_size: int):
+        self.history = list(history)
+        self.action_space_size = action_space_size
+
+    def clone(self):
+        return ActionHistory(self.history, self.action_space_size)
+
+    def add_action(self, action: Action):
+        self.history.append(action)
+
+    def last_action(self) -> Action:
+        return self.history[-1]
+
+    def action_space(self) -> List[Action]:
+        return [Action(i) for i in range(self.action_space_size)]
+
+    def to_play(self) -> Player:
+        return Player(1)
+
+class Node(object):
+
+    def __init__(self, prior: float):
+
+        self.visit_count = 0
+        self.to_play = -1
+        self.prior = prior
+        self.value_sum = 0
+        self.children = {}
+        self.hidden_state = None
+        self.reward = 0
+
+    def expanded(self) -> bool:
+
+        return len(self.children) > 0
+
+    def value(self) -> float:
+
+        if self.visit_count == 0:
+            return 0
+        else:
+            return self.value_sum / self.visit_count
 
 class MCTS:
     """
@@ -173,125 +257,6 @@ class MCTS:
             ) + self.config.discount * value
 
 
-
-class Node:
-    def __init__(self, prior):
-        self.visit_count = 0
-        self.to_play = -1
-        self.prior = prior
-        self.value_sum = 0
-        self.children = {}
-        self.hidden_state = None
-        self.reward = 0
-
-    def expanded(self):
-        return len(self.children) > 0
-
-    def value(self):
-        if self.visit_count == 0:
-            return 0
-        return self.value_sum / self.visit_count
-
-    def expand(self, actions, to_play, reward, policy_logits, hidden_state):
-        """
-        We expand a node using the value, reward and policy prediction obtained from the
-        neural network.
-        """
-        self.to_play = to_play
-        self.reward = reward
-        self.hidden_state = hidden_state
-
-        policy_values = torch.softmax(
-            torch.tensor([policy_logits[0][a] for a in actions]), dim=0
-        ).tolist()
-        policy = {a: policy_values[i] for i, a in enumerate(actions)}
-        for action, p in policy.items():
-            self.children[action] = Node(p)
-
-    def add_exploration_noise(self, dirichlet_alpha, exploration_fraction):
-        """
-        At the start of each search, we add dirichlet noise to the prior of the root to
-        encourage the search to explore new actions.
-        """
-        actions = list(self.children.keys())
-        noise = numpy.random.dirichlet([dirichlet_alpha] * len(actions))
-        frac = exploration_fraction
-        for a, n in zip(actions, noise):
-            self.children[a].prior = self.children[a].prior * (1 - frac) + n * frac
-
-
-class GameHistory:
-    """
-    Store only usefull information of a self-play game.
-    """
-
-    def __init__(self):
-        self.observation_history = []
-        self.action_history = []
-        self.reward_history = []
-        self.to_play_history = []
-        self.child_visits = []
-        self.root_values = []
-        self.reanalysed_predicted_root_values = None
-        # For PER
-        self.priorities = None
-        self.game_priority = None
-
-    def store_search_statistics(self, root, action_space):
-        # Turn visit count from root into a policy
-        if root is not None:
-            sum_visits = sum(child.visit_count for child in root.children.values())
-            self.child_visits.append(
-                [
-                    root.children[a].visit_count / sum_visits
-                    if a in root.children
-                    else 0
-                    for a in action_space
-                ]
-            )
-
-            self.root_values.append(root.value())
-        else:
-            self.root_values.append(None)
-
-    def get_stacked_observations(
-        self, index, num_stacked_observations, action_space_size
-    ):
-        """
-        Generate a new observation with the observation at the index position
-        and num_stacked_observations past observations and actions stacked.
-        """
-        # Convert to positive index
-        index = index % len(self.observation_history)
-
-        stacked_observations = self.observation_history[index].copy()
-        for past_observation_index in reversed(
-            range(index - num_stacked_observations, index)
-        ):
-            if 0 <= past_observation_index:
-                previous_observation = numpy.concatenate(
-                    (
-                        self.observation_history[past_observation_index],
-                        [
-                            numpy.ones_like(stacked_observations[0])
-                            * self.action_history[past_observation_index + 1]
-                            / action_space_size
-                        ],
-                    )
-                )
-            else:
-                previous_observation = numpy.concatenate(
-                    (
-                        numpy.zeros_like(self.observation_history[index]),
-                        [numpy.zeros_like(stacked_observations[0])],
-                    )
-                )
-
-            stacked_observations = numpy.concatenate(
-                (stacked_observations, previous_observation)
-            )
-
-        return stacked_observations
 
 
 MAXIMUM_FLOAT_VALUE = float('inf')
