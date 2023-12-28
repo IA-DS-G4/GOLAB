@@ -3,8 +3,8 @@ import keras
 import numpy as np
 from tensorflow.python.keras.layers import Input, Dense
 from mcts import Action, Player
+import typing
 from typing import NamedTuple, Dict, List, Optional
-
 
 '''
 Impementation of neural network in muzero algorithm
