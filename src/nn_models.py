@@ -4,6 +4,21 @@ import numpy as np
 from tensorflow.python.keras.layers import Input, Dense
 from mcts import Action, Player
 from typing import NamedTuple, Dict, List, Optional
+from tensorflow.python.keras.applications.resnet_v2 import ResNet50V2
+from tensorflow.python.keras.models import Sequential, Model
+from tensorflow.python.keras.layers import (
+    Dense,
+    Conv1D,
+    MaxPooling1D,
+    BatchNormalization,
+    Dropout,
+    Flatten,
+    Conv2D,
+    MaxPool2D,
+    Activation,
+    GlobalAveragePooling2D,
+)
+
 
 
 '''
@@ -17,7 +32,7 @@ There are 4 networks:
 '''
 
 
-class NetworkOutput(typing.NamedTuple):
+class NetworkOutput(NamedTuple):
     value: float
     reward: float
     policy_logits: Dict[Action, float]
@@ -28,24 +43,42 @@ class NetworkOutput(typing.NamedTuple):
 class Network:
 
     def __init__(self, config):
-        # regularizer = L2(config.weight_decay)
+        #regularizer = L2(config.weight_decay)
 
 
-        #resnet
+        #ResNet50V2
         self.representation = keras.Sequential([Dense(config.hidden_layer_size, activation='relu'),
                                                 Dense(config.hidden_layer_size)])
-        #MLP
+
+        #ResNet50V2 + fully connected layers
         self.value = keras.Sequential([Dense(config.hidden_layer_size, activation='relu'),
                                        Dense(1, activation='relu')])
-        #MLP
-        self.policy = keras.Sequential([Dense(config.hidden_layer_size, activation='relu'),
-                                        Dense(config.action_space_size, activation='softmax')])
-        #MLP
+
+
+        #resnet + fully connected layers
+        #input size should be given in the form (x,y, channels) with channels 3 because resnet takes rgb images
+        model = ResNet50V2(include_top=False,input_tensor=None,input_shape=config.hidden_layer_size,classifier_activation="softmax")
+        x = model.output
+        x = GlobalAveragePooling2D()(x)
+        x = Dense(1024, activation='relu')(x)
+        x = Dense(512, activation='relu')(x)
+        preds = Dense(config.action_space_size, activation='softmax')(x)  # FC-layer
+        self.policy = Model(inputs=model.input, outputs=preds)
+
+
+        #resnet
         self.reward = keras.Sequential([Dense(config.hidden_layer_size, activation='relu'),
                                         Dense(1, activation='relu')])
-        #resnet
-        self.dynamics = keras.Sequential([Dense(config.hidden_layer_size, activation='relu'),
-                                          Dense(config.hidden_layer_size)])
+
+        #MLP
+        self.dynamics = keras.Sequential(
+                    [
+                        Dense(config.hidden_layer_size, activation="relu", name="layer1"),
+                        Dense(config.hidden_layer_size, activation="relu", name="layer2"),
+                        Dense(config.hidden_layer_size, name="layer3"),
+                    ]
+                )
+
 
         self.tot_training_steps = 0
 
