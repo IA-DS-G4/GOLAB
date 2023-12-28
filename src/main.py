@@ -22,17 +22,6 @@ class MuZero:
         self.Game = go_muzero_config.MuzeroGame()
         self.config = go_muzero_config.MuZeroConfig()
 
-        if config:
-            if isinstance(config, dict):
-                for param, value in config.items():
-                    if hasattr(self.config, param):
-                        setattr(self.config, param, value)
-                    else:
-                        raise AttributeError(
-                            f"The config has no attribute '{param}'. Check the config for the complete list of parameters.")
-            else:
-                self.config = config
-
         np.random.seed(self.config.seed)
         torch.manual_seed(self.config.seed)
 
