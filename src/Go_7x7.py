@@ -5,6 +5,7 @@ import numpy
 import torch
 from go_board import GoBoard
 from go_utils import GoUtils
+from typing import Dict, List, Optional
 from abstract_game import AbstractGame
 
 
