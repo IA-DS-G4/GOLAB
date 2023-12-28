@@ -1,0 +1,115 @@
+import tensorflow as tf
+import keras
+import numpy as np
+from tensorflow.python.keras.layers import Input, Dense
+
+
+'''
+Impementation of neural network in muzero algorithm
+
+There are 4 networks:
+- The Representation network 
+- The Value network
+- The Policy network
+- The Reward network 
+'''
+
+
+class NetworkOutput:
+    def __init__(self, value, reward, policy_logits, policy_tensor, hidden_state):
+        self.value = value
+        self.reward = reward
+        self.policy_logits = policy_logits
+        self.policy_tensor = policy_tensor
+        self.hidden_state = hidden_state
+
+
+class Network:
+
+    def __init__(self, config):
+        # regularizer = L2(config.weight_decay)
+
+        self.representation = keras.Sequential([Dense(config.hidden_layer_size, activation='relu'),
+                                                Dense(config.hidden_layer_size)])
+
+        self.value = keras.Sequential([Dense(config.hidden_layer_size, activation='relu'),
+                                       Dense(1, activation='relu')])
+
+        self.policy = keras.Sequential([Dense(config.hidden_layer_size, activation='relu'),
+                                        Dense(config.action_space_size, activation='softmax')])
+
+        self.reward = keras.Sequential([Dense(config.hidden_layer_size, activation='relu'),
+                                        Dense(1, activation='relu')])
+
+        self.dynamics = keras.Sequential([Dense(config.hidden_layer_size, activation='relu'),
+                                          Dense(config.hidden_layer_size)])
+
+        self.tot_training_steps = 0
+
+        self.action_space_size = config.action_space_size
+
+    def initial_inference(self, image):
+        # representation + prediction function
+        hidden_state = self.representation(np.expand_dims(image, 0))
+        # hidden_state = tf.keras.utils.normalize(hidden_state)
+
+        value = self.value(hidden_state)
+        policy = self.policy(hidden_state)
+        reward = tf.constant([[0]], dtype=tf.float32)
+        policy_p = policy[0]
+
+        return NetworkOutput(value, reward, {Action(a): policy_p[a] for a in range(len(policy_p))}, policy, hidden_state)
+
+    def recurrent_inference(self, hidden_state, action) -> NetworkOutput:
+        # dynamics + prediction function
+
+        a = hidden_state.numpy()[0]
+        b = np.eye(self.action_space_size)[action.index]
+        nn_input = np.concatenate((a, b))
+        nn_input = np.expand_dims(nn_input, axis=0)
+
+        next_hidden_state = self.dynamics(nn_input)
+
+        # next_hidden_state = tf.keras.utils.normalize(next_hidden_state)
+
+        reward = self.reward(nn_input)
+        value = self.value(next_hidden_state)
+        policy = self.policy(next_hidden_state)
+        policy_p = policy[0]
+
+        return NetworkOutput(value,
+                             reward,
+                             {Action(a): policy_p[a] for a in range(len(policy_p))},
+                             policy,
+                             next_hidden_state)
+
+    def get_weights_func(self):
+        # Returns the weights of this network.
+
+        def get_variables():
+            networks = (self.representation,
+                        self.value,
+                        self.policy,
+                        self.dynamics,
+                        self.reward)
+            return [variables
+                    for variables_list in map(lambda n: n.weights, networks)
+                    for variables in variables_list]
+
+        return get_variables
+
+    def get_weights(self):
+        # Returns the weights of this network.
+
+        networks = (self.representation,
+                    self.value,
+                    self.policy,
+                    self.dynamics,
+                    self.reward)
+        return [variables
+                for variables_list in map(lambda n: n.weights, networks)
+                for variables in variables_list]
+
+    def training_steps(self) -> int:
+        # How many steps / batches the network has been trained for.
+        return self.tot_training_steps
