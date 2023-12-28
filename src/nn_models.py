@@ -10,8 +10,6 @@ from tensorflow.python.keras.models import Sequential, Model
 import tensorflow_addons as tfa
 from tensorflow.python.keras.layers import (
     Dense,
-    Conv1D,
-    MaxPooling1D,
     BatchNormalization,
     Dropout,
     Flatten,
@@ -58,23 +56,23 @@ class Network:
         embed_actions = True
 
 
-        #ResNet50V2
+
         self.representation = keras.Sequential(
                     [
-                        Dense(config.observation_space_size, activation="relu")
-                        Conv2D(32, (3, 3), activation='relu', input_shape=config.observation_space_size)
-                        MaxPool2D((2, 2))
-                        Conv2D(64, (3, 3), activation='relu')
-                        MaxPool2D((2, 2))
-                        Conv2D(64, (3, 3), activation='relu')
-                        Flatten()
+                        Dense(config.observation_space_size, activation="relu", input_shape=config.observation_space_size),
+                        Conv2D(32, (3, 3), activation='relu', input_shape=config.observation_space_size),
+                        MaxPool2D((2, 2)),
+                        Conv2D(64, (3, 3), activation='relu'),
+                        MaxPool2D((2, 2)),
+                        Conv2D(64, (3, 3), activation='relu'),
+                        Flatten(),
                         Dense(64, activation="relu"),
                         Dense(config.hidden_layer_size)
                     ]
                 )
 
 
-        #ResNet50V2 + fully connected layers
+
         self.value = keras.Sequential(
                     [
                         Dense(config.observation_space_size, activation="relu", name="layer1"),
@@ -106,7 +104,7 @@ class Network:
                     ]
                 )
 
-        #resnet
+
         self.reward = keras.Sequential(
                     [
                         Dense(config.observation_space_size, activation="relu", name="layer1"),
@@ -184,7 +182,7 @@ class SharedStorage(object):
     def __init__(self, config):
         self.network = Network(config)
 
-    def latest_network(self) -> Network:
+    def latest_network(self):
         return self.network
 
     def save_network(self, step: int, network: Network):
