@@ -77,7 +77,6 @@ class MuZero:
     def logging_loop(self, num_gpus): # Keep track of the training performance.
         return
 
-    def terminate_workers(self):
 
     def test(self, render=True, opponent=None, muzero_player=None, num_tests=1, num_gpus=0):
 
@@ -124,20 +123,6 @@ class MuZero:
 
     # ... (unchanged)
 
-    def diagnose_model(self, horizon):
-        """
-               Play a game only with the learned model then play the same trajectory in the real
-               environment and display information.
-
-               Args:
-                   horizon (int): Number of timesteps for which we collect information.
-               """
-        game = self.Game(self.config.seed)
-        obs = game.reset()
-        dm = diagnose_model.DiagnoseModel(self.checkpoint, self.config)
-        dm.compare_virtual_with_real_trajectories(obs, game, horizon)
-        input("Press enter to close all plots")
-        dm.close_all()
 
 def get_initial_weights(self, config):
     model = model.MuZeroNetwork(config)
