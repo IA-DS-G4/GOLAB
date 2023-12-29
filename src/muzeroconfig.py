@@ -48,11 +48,8 @@ class MuZeroConfig:
         self.pb_c_base = 19652
         self.pb_c_init = 1.25
 
-        # If we already have some information about which values occur in the
-        # environment, we can use them to initialize the rescaling.
-        # This is not strictly necessary, but establishes identical behaviour to
-        # AlphaZero in board games.
-        self.known_bounds = known_bounds
+        #rewards in the environment are -1 for loose and 1 for win
+        self.known_bounds = [-1,1]
 
         ### Training
         self.training_steps = int(500e3)

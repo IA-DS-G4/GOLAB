@@ -4,6 +4,8 @@ from go_utils import GoUtils
 from typing import Dict, List, Optional
 from nn_models import Network
 from muzeroconfig import MuZeroConfig
+from mcts import Player, Action, ActionHistory, Node
+
 
 
 def make_Go7x7_config() -> MuZeroConfig:
@@ -53,6 +55,7 @@ class Go7x7:
         self.observation_space_shape = (3,7,7)
         self.observation_space_size = 7*7
         self.action_space = list(range(-1,(7*7)))
+        self.rewards = []
 
     def to_play(self):
         return 0 if self.player == 1 else 1
@@ -77,6 +80,13 @@ class Go7x7:
         self.player *= -1
         return self.get_observation(), reward, done
 
+    def apply(self, action: Action):
+
+        observation, reward, done = self.step(action)
+        self.rewards.append(reward)
+        #self.history.append(action)???????????????????????????????????
+
+
     def get_observation(self):
         board_player1 = numpy.where(self.board.board_grid == 1, 1.0, 0.0)
         board_player2 = numpy.where(self.board.board_grid == -1, 1.0, 0.0)
@@ -92,8 +102,87 @@ class Go7x7:
                     legal.append(i * self.board_size + j)
         return legal
 
+    def total_rewards(self):
+
+        return sum(self.rewards)
+
     def is_finished(self):
         return self.utils.is_game_finished(board=self.board)
+
+
+class Game(object):
+    """A single episode of interaction with the environment."""
+
+    def __init__(self, action_space_size: int, discount: float):
+
+        self.environment = self.create_environment()
+        self.history = []
+        self.rewards = []
+        self.child_visits = []
+        self.root_values = []
+        self.action_space_size = action_space_size
+        self.discount = discount
+
+    def create_environment(self):
+
+        # Game specific environment.
+        pass
+
+    def terminal(self) -> bool:
+
+        # Game specific termination rules.
+        pass
+
+
+
+    def store_search_statistics(self, root: Node):
+
+        sum_visits = sum(child.visit_count for child in root.children.values())
+        action_space = (Action(index) for index in range(self.action_space_size))
+        self.child_visits.append([
+            root.children[a].visit_count / sum_visits if a in root.children else 0
+            for a in action_space
+        ])
+        self.root_values.append(root.value())
+
+    def make_image(self, state_index: int):
+
+        # Game specific feature planes.
+        pass
+
+    def make_target(self, state_index: int, num_unroll_steps: int, td_steps: int, to_play: Player,
+                    action_space_size: int):
+
+        # The value target is the discounted root value of the search tree N steps
+        # into the future, plus the discounted sum of all rewards until then.
+        targets = []
+        for current_index in range(state_index, state_index + num_unroll_steps + 1):
+            bootstrap_index = current_index + td_steps
+            if bootstrap_index < len(self.root_values):
+                value = self.root_values[bootstrap_index] * self.discount ** td_steps
+            else:
+                value = 0
+
+            for i, reward in enumerate(self.rewards[current_index:bootstrap_index]):
+                value += reward * self.discount ** i  # pytype: disable=unsupported-operands
+
+            if current_index > 0 and current_index <= len(self.rewards):
+                last_reward = self.rewards[current_index - 1]
+            else:
+                last_reward = None
+
+            if current_index < len(self.root_values):
+                targets.append((value, last_reward, self.child_visits[current_index]))
+            else:
+                # States past the end of games are treated as absorbing states.
+                targets.append((0, last_reward, []))
+
+        return targets
+
+
+    def action_history(self) -> ActionHistory:
+
+        return ActionHistory(self.history, self.action_space_size)
 
 
 

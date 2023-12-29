@@ -44,7 +44,7 @@ class Player(object):
 
 class ActionHistory(object):
     """Simple history container used inside the search.
-       Only used to keep track of the actions executed.
+       Used to keep track of the actions executed.
     """
 
     def __init__(self, history: List[Action], action_space_size: int):
