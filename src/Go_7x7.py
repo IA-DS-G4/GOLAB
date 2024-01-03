@@ -80,7 +80,7 @@ class Go7x7:
         self.player *= -1
         return self.get_observation(), reward, done
 
-    def apply(self, action: Action):
+    def apply(self, action):
 
         observation, reward, done = self.step(action)
         self.rewards.append(reward)

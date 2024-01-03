@@ -2,12 +2,10 @@ import tensorflow as tf
 import keras
 import numpy as np
 from tensorflow.python.keras.layers import Input, Dense
-from mcts import Action, Player
+from mcts import Action
 import typing
 from typing import NamedTuple, Dict, List, Optional
-from tensorflow.python.keras.applications.resnet_v2 import ResNet50V2
-from tensorflow.python.keras.models import Sequential, Model
-import tensorflow_addons as tfa
+
 from tensorflow.python.keras.layers import (
     Dense,
     BatchNormalization,

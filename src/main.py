@@ -1,134 +1,147 @@
-import copy
-import json
-import math
-import pathlib
-import pickle
-import sys
 import time
-from torch.utils.tensorboard import SummaryWriter
-import torch
 import numpy as np
-import go_muzero_config
-import diagnose_model
-from model import MuZeroNetwork
-import replay_buffer
-import self_play
-import shared_storage
-import trainer
+import tensorflow as tf
+import keras
+from muzeroconfig import MuZeroConfig
+from mcts import MinMaxStats, ActionHistory, SharedStorage, ReplayBuffer
+from matplotlib import pyplot as plt
+from nn_models import Network
+from self_play_custom import run_selfplay
+from mcts import Action
+from IPython.display import clear_output
+from Go_7x7 import make_Go7x7_config
+
+def scalar_loss(prediction, target) -> float:
+    # MSE in board games, cross entropy between categorical values in Atari.
+    return tf.losses.mean_squared_error(target, prediction)
 
 
-class MuZero:
-    def __init__(self):
-        self.Game = go_muzero_config.MuzeroGame()
-        self.config = go_muzero_config.MuZeroConfig()
-
-        np.random.seed(self.config.seed)
-        torch.manual_seed(self.config.seed)
+def scale_gradient(tensor, scale: float):
+    # Scales the gradient for the backward pass.
+    return tensor * scale + tf.stop_gradient(tensor) * (1 - scale)
 
 
-        # Checkpoint and replay buffer used to initialize workers
-        self.checkpoint = {
-            "weights": None,
-            "optimizer_state": None,
-            "total_reward": 0,
-            "muzero_reward": 0,
-            "opponent_reward": 0,
-            "episode_length": 0,
-            "mean_value": 0,
-            "training_step": 0,
-            "lr": 0,
-            "total_loss": 0,
-            "value_loss": 0,
-            "reward_loss": 0,
-            "policy_loss": 0,
-            "num_played_games": 0,
-            "num_played_steps": 0,
-            "num_reanalysed_games": 0,
-            "terminate": False,
-        }
+def update_weights(optimizer: tf.keras.optimizers.Optimizer, network: Network, batch, weight_decay: float):
+    with tf.GradientTape() as tape:
 
-        self.replay_buffer = {}
+        loss = 0
 
-        cpu_weights = get_initial_weights(self.config)
-        self.checkpoint["weights"], self.summary = copy.deepcopy(cpu_weights)
+        for image, actions, targets in batch:
 
-        # Workers
-        self.self_play_workers = None
-        self.test_worker = None
-        self.training_worker = None
-        self.reanalyse_worker = None
-        self.replay_buffer_worker = None
-        self.shared_storage_worker = None
+            # Initial step, from the real observation.
+            value, reward, _, policy_t, hidden_state = network.initial_inference(image)
+            predictions = [(1.0, value, reward, policy_t)]
 
-    def train(self, log_in_tensorboard=True):
-        return
+            # Recurrent steps, from action and previous hidden state.
+            for action in actions:
+                value, reward, _, policy_t, hidden_state = network.recurrent_inference(hidden_state, Action(action))
+                predictions.append((1.0 / len(actions), value, reward, policy_t))
 
-    def logging_loop(self, num_gpus): # Keep track of the training performance.
-        return
+                hidden_state = scale_gradient(hidden_state, 0.5)
 
+            for k, (prediction, target) in enumerate(zip(predictions, targets)):
 
-    def test(self, render=True, opponent=None, muzero_player=None, num_tests=1, num_gpus=0):
+                gradient_scale, value, reward, policy_t = prediction
+                target_value, target_reward, target_policy = target
 
+                l_a = scalar_loss(value, [target_value])
 
-    def load_model(self, checkpoint_path=None, replay_buffer_path=None):
-        """
-               Load a model and/or a saved replay buffer.
+                if k > 0:
+                    l_b = tf.dtypes.cast(scalar_loss(reward, [target_reward]), tf.float32)
+                else:
+                    l_b = 0
 
-               Args:
-                   checkpoint_path (str): Path to model.checkpoint or model.weights.
+                if target_policy == []:
+                    l_c = 0
+                else:
+                    # l_c = tf.nn.softmax_cross_entropy_with_logits(logits=policy_t, labels=target_policy)
+                    cce = keras.losses.CategoricalCrossentropy()
+                    l_c = cce([target_policy], policy_t)
 
-                   replay_buffer_path (str): Path to replay_buffer.pkl
-               """
-        # Load checkpoint
-        if checkpoint_path:
-            checkpoint_path = pathlib.Path(checkpoint_path)
-            self.checkpoint = torch.load(checkpoint_path)
-            print(f"\nUsing checkpoint from {checkpoint_path}")
+                l = l_a + l_b + l_c
 
-        # Load replay buffer
-        if replay_buffer_path:
-            replay_buffer_path = pathlib.Path(replay_buffer_path)
-            with open(replay_buffer_path, "rb") as f:
-                replay_buffer_infos = pickle.load(f)
-            self.replay_buffer = replay_buffer_infos["buffer"]
-            self.checkpoint["num_played_steps"] = replay_buffer_infos[
-                "num_played_steps"
-            ]
-            self.checkpoint["num_played_games"] = replay_buffer_infos[
-                "num_played_games"
-            ]
-            self.checkpoint["num_reanalysed_games"] = replay_buffer_infos[
-                "num_reanalysed_games"
-            ]
+                loss += scale_gradient(l, gradient_scale)
 
-            print(f"\nInitializing replay buffer with {replay_buffer_path}")
-        else:
-            print(f"Using empty buffer.")
-            self.replay_buffer = {}
-            self.checkpoint["training_step"] = 0
-            self.checkpoint["num_played_steps"] = 0
-            self.checkpoint["num_played_games"] = 0
-            self.checkpoint["num_reanalysed_games"] = 0
+        loss /= len(batch)
 
-    # ... (unchanged)
+        for weights in network.get_weights():
+            loss += weight_decay * tf.nn.l2_loss(weights)
+
+    # optimizer.minimize(loss) # this is old Tensorflow API, we use GradientTape
+
+    gradients = tape.gradient(loss, [network.representation.trainable_variables,
+                                     network.dynamics.trainable_variables,
+                                     network.policy.trainable_variables,
+                                     network.value.trainable_variables,
+                                     network.reward.trainable_variables])
+
+    optimizer.apply_gradients(zip(gradients[0], network.representation.trainable_variables))
+    optimizer.apply_gradients(zip(gradients[1], network.dynamics.trainable_variables))
+    optimizer.apply_gradients(zip(gradients[2], network.policy.trainable_variables))
+    optimizer.apply_gradients(zip(gradients[3], network.value.trainable_variables))
+    optimizer.apply_gradients(zip(gradients[4], network.reward.trainable_variables))
+
+    return loss
 
 
-def get_initial_weights(self, config):
-    model = model.MuZeroNetwork(config)
-    weights = model.get_weights()
-    summary = str(model).replace("\n", " \n\n")
-    return weights, summary
+def train_network(config: MuZeroConfig, storage: SharedStorage, replay_buffer: ReplayBuffer, iterations: int):
+    network = storage.latest_network()
+    learning_rate = config.lr_init * config.lr_decay_rate ** (iterations / config.lr_decay_steps)
+    optimizer = tf.keras.optimizers.SGD(learning_rate, config.momentum)
+
+    batch = replay_buffer.sample_batch(config.num_unroll_steps, config.td_steps, config.action_space_size)
+    loss = update_weights(optimizer, network, batch, config.weight_decay)
+
+    network.tot_training_steps += 1
+
+    return loss
+
+def launch_job(f, *args):
+    f(*args)
 
 
-#Search for hyperparameters
-def hyperparameter_search(game_name, parametrization, budget, parallel_experiments, num_tests):
-    pass
+def muzero(config: MuZeroConfig):
+    storage = SharedStorage(config)
+    replay_buffer = ReplayBuffer(config)
 
+    rewards = []
+    losses = []
+    moving_averages = []
 
-def load_model_menu(muzero, game_name):
-    pass
+    t = time.time()
 
+    for i in range(config.training_episodes):
+
+        # self-play
+        launch_job(run_selfplay, config, storage, replay_buffer)
+
+        # print and plot rewards
+        game = replay_buffer.last_game()
+        reward_e = game.total_rewards()
+        rewards.append(reward_e)
+        moving_averages.append(np.mean(rewards[-20:]))
+
+        for _ in range(10):
+            clear_output(wait=True)
+
+        print('Episode ' + str(i + 1) + ' ' + 'reward: ' + str(reward_e))
+        print('Moving Average (20): ' + str(np.mean(rewards[-20:])))
+        print('Moving Average (100): ' + str(np.mean(rewards[-100:])))
+        print('Moving Average: ' + str(np.mean(rewards)))
+        print('Elapsed time: ' + str((time.time() - t) / 60) + ' minutes')
+
+        plt.plot(rewards)
+        plt.plot(moving_averages)
+        plt.show()
+
+        # training
+        loss = train_network(config, storage, replay_buffer, i).numpy()[0]
+
+        # print and plot loss
+        print('Loss: ' + str(loss))
+        losses.append(loss)
+        plt.plot(losses)
+        plt.show()
 
 if __name__ == "__main__":
-    #initialise Example_code
-    muzero = MuZero()
+    muzero(make_Go7x7_config())

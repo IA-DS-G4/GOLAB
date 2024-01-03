@@ -1,6 +1,8 @@
 import typing
 from typing import Optional
+import collections
 
+KnownBounds = collections.namedtuple('KnownBounds', ['min', 'max'])
 
 class MuZeroConfig:
 
@@ -49,7 +51,7 @@ class MuZeroConfig:
         self.pb_c_init = 1.25
 
         #rewards in the environment are -1 for loose and 1 for win
-        self.known_bounds = [-1,1]
+        self.known_bounds = known_bounds
 
         ### Training
         self.training_steps = int(500e3)
