@@ -40,11 +40,11 @@ def make_Go7x7_config() -> MuZeroConfig:
                         dirichlet_alpha=0.25,
                         num_simulations=150,
                         batch_size=100,
-                        td_steps=7,
+                        td_steps=20,
                         lr_init=0.0001,
                         lr_decay_steps=5000,
                         training_episodes=225,
-                        hidden_layer_size=32,
+                        hidden_layer_size=(7*7)+1,
                         visit_softmax_temperature_fn=visit_softmax_temperature)
 
 
@@ -54,7 +54,7 @@ class Go7x7:
         self.player = 1 # Black goes first
         self.board = GoBoard(board_dimension=self.board_size, player=self.player)
         self.utils = GoUtils()
-        self.observation_space_shape = (3,self.board_size,self.board_size)
+        self.observation_space_shape = (self.board_size,self.board_size)
         self.observation_space_size = self.board_size**2
         self.action_space_size = (self.board_size**2)+1
         self.rewards = []

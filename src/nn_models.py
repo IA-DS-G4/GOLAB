@@ -70,7 +70,8 @@ class Network(object):
         policy = self.policy(hidden_state)
         reward = tf.constant([[0]], dtype=tf.float32)
         policy_p = policy[0]
-
+        list_actions = {Action(a): policy_p[a] for a in range(len(policy_p))}
+        print(list_actions)
         return NetworkOutput(value,
                              reward,
                              {Action(a): policy_p[a] for a in range(len(policy_p))},
