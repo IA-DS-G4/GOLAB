@@ -1,10 +1,11 @@
 import time
 import numpy as np
 import math
-from mcts import MinMaxStats, ActionHistory, SharedStorage, ReplayBuffer, Node, Action, Player
+from mcts import MinMaxStats, SharedStorage, ReplayBuffer, Node, Action, Player
 from muzeroconfig import MuZeroConfig
 from nn_models import Network, NetworkOutput
 from typing import List, Optional
+from Wrappers import ActionHistory
 
 
 # Each self-play job is independent of all others; it takes the latest network

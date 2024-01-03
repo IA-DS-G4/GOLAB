@@ -3,11 +3,11 @@ import numpy as np
 import tensorflow as tf
 import keras
 from muzeroconfig import MuZeroConfig
-from mcts import MinMaxStats, ActionHistory, SharedStorage, ReplayBuffer
+from mcts import MinMaxStats, SharedStorage, ReplayBuffer
 from matplotlib import pyplot as plt
 from nn_models import Network
 from self_play_custom import run_selfplay
-from mcts import Action
+from Wrappers import Action, ActionHistory
 from IPython.display import clear_output
 from Go_7x7 import make_Go7x7_config
 

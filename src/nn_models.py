@@ -1,14 +1,12 @@
 import tensorflow as tf
 import keras
 import numpy as np
-from tensorflow.python.keras.layers import Input, Dense
-from mcts import Action
+from Wrappers import Action
 import typing
 from typing import NamedTuple, Dict, List, Optional
 
 from tensorflow.python.keras.layers import (
     Dense,
-    BatchNormalization,
     Dropout,
     Flatten,
     Conv2D,
