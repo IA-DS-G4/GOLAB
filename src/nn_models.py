@@ -55,8 +55,8 @@ class Network:
 
         self.representation = keras.Sequential(
                     [
-                        Dense(config.observation_space_size, activation="relu", input_shape=config.observation_space_size),
-                        Conv2D(32, (3, 3), activation='relu', input_shape=config.observation_space_size),
+                        Dense(config.observation_space_size, activation="relu", input_shape=config.observation_shape),
+                        Conv2D(32, (3, 3), activation='relu', input_shape=config.observation_shape),
                         MaxPool2D((2, 2)),
                         Conv2D(64, (3, 3), activation='relu'),
                         MaxPool2D((2, 2)),

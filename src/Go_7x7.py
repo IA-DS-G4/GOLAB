@@ -1,11 +1,8 @@
 import numpy
 from go_board import GoBoard
 from go_utils import GoUtils
-from typing import Dict, List, Optional
-from nn_models import Network
 from muzeroconfig import MuZeroConfig
-from mcts import Node
-from Wrappers import Action, Player, ActionHistory, Game
+
 
 
 
@@ -44,7 +41,7 @@ def make_Go7x7_config() -> MuZeroConfig:
                           training_episodes=225,
                           hidden_layer_size=32,
                           visit_softmax_temperature_fn=visit_softmax_temperature,
-                          Game= Go7x7)
+                          Game= Go7x7())
 
 
 class Go7x7:
@@ -53,9 +50,9 @@ class Go7x7:
         self.player = 1 # Black goes first
         self.board = GoBoard(board_dimension=self.board_size, player=self.player)
         self.utils = GoUtils()
-        self.observation_space_shape = (3,7,7)
-        self.observation_space_size = 7*7
-        self.action_space = list(range(-1,(7*7)))
+        self.observation_space_shape = (3,self.board_size,self.board_size)
+        self.observation_space_size = self.board_size**2
+        self.action_space = list(range(-1,(self.board_size**2)))
         self.rewards = []
 
     def to_play(self):
@@ -110,4 +107,5 @@ class Go7x7:
     def is_finished(self):
         return self.utils.is_game_finished(board=self.board)
 
-
+if __name__ == "__main__":
+    pass
