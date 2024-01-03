@@ -28,11 +28,11 @@ def run_selfplay(config: MuZeroConfig,
 def play_game(config: MuZeroConfig, network: Network):
     game = config.new_game()
 
-    while not game.is_finished() and len(game.history) < config.max_moves:
+    while not game.is_finished() and len(game.board.game_history) < config.max_moves:
         # At the root of the search tree we use the representation function to
         # obtain a hidden state given the current observation.
         root = Node(0)
-        current_observation = game.get_observation(-1)
+        current_observation = game.get_observation()[-1]
         expand_node(root,
                     game.to_play(),
                     game.legal_actions(),
@@ -58,7 +58,7 @@ def run_mcts(config: MuZeroConfig,
              root: Node,
              action_history: ActionHistory,
              network: Network):
-    min_max_stats = MinMaxStats(config.known_bounds)
+    min_max_stats = MinMaxStats()
 
     for _ in range(config.num_simulations):
 
@@ -108,8 +108,9 @@ def select_action(config: MuZeroConfig,
 # Select the child with the highest UCB score.
 
 def select_child(config: MuZeroConfig, node: Node, min_max_stats: MinMaxStats):
-    _, action, child = max(
-        (ucb_score(config, node, child, min_max_stats), action, child) for action, child in node.children.items())
+    lsit = [(ucb_score(config, node, child, min_max_stats), action, child) for action, child in node.children.items()]
+    print(lsit)
+    _, action, child = max((ucb_score(config, node, child, min_max_stats), action, child) for action, child in node.children.items())
     return action, child
 
 
@@ -124,7 +125,7 @@ def ucb_score(config: MuZeroConfig, parent: Node, child: Node, min_max_stats: Mi
         value_score = min_max_stats.normalize(child.reward + config.discount * child.value())
     else:
         value_score = 0
-
+    assert isinstance(prior_score + value_score, float), f"ucb score is not a float error, check gamefile. score is: {prior_score+ value_score}"
     return prior_score + value_score
 
 
@@ -134,12 +135,13 @@ def expand_node(node: Node, to_play: Player, actions: List[Action], network_outp
     node.to_play = to_play
     node.hidden_state = network_output.hidden_state
     node.reward = network_output.reward
-    # policy = {a: math.exp(network_output.policy_logits[a]) for a in actions}
-    # policy_sum = sum(policy.values())
-    # for action, p in policy.items():
-    #    node.children[action] = Node(p / policy_sum)
-    for action, p in network_output.policy_logits.items():
-        node.children[action] = Node(p)
+    #print(actions)
+    policy = {a: math.exp(network_output.policy_logits[a]) for a in actions}
+    policy_sum = sum(policy.values())
+    for action, p in policy.items():
+        node.children[action] = Node(p / policy_sum)
+    #for action, p in network_output.policy_logits.items():
+    #    node.children[action] = Node(p)
 
 
 # At the end of a simulation, we propagate the evaluation all the way up the tree to the root.

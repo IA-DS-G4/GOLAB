@@ -1,7 +1,9 @@
 import numpy
 from go_board import GoBoard
 from go_utils import GoUtils
-from muzeroconfig import MuZeroConfig
+from muzeroconfig import MuZeroConfig, ActionHistory
+from typing import List
+from Wrappers import Action, Player
 
 
 class Go7x7Config(MuZeroConfig):
@@ -54,7 +56,7 @@ class Go7x7:
         self.utils = GoUtils()
         self.observation_space_shape = (3,self.board_size,self.board_size)
         self.observation_space_size = self.board_size**2
-        self.action_space = list(range(-1,(self.board_size**2)))
+        self.action_space_size = (self.board_size**2)+1
         self.rewards = []
 
     def to_play(self):
@@ -69,7 +71,7 @@ class Go7x7:
         r = numpy.floor(action / self.board_size)
         c = action % self.board_size
         move = (r,c)
-        if action == -1:
+        if action == self.board_size**2:
             move = (-1,-1)
         self.utils.make_move(board=self.board,move=move)
         done = self.utils.is_game_finished(board=self.board)
@@ -80,7 +82,7 @@ class Go7x7:
         self.player *= -1
         return self.get_observation(), reward, done
 
-    def apply(self, action):
+    def apply(self, action: Action):
 
         observation, reward, done = self.step(action)
         self.rewards.append(reward)
@@ -93,14 +95,14 @@ class Go7x7:
         board_to_play = numpy.array(self.board.board_grid, dtype="int32")
         return numpy.array([board_player1, board_player2, board_to_play])
 
-    def legal_actions(self):
-        # Pass = -1 is a valid move
-        legal = [-1]
+    def legal_actions(self)-> List[Action]:
+        # Pass = boardsize**2 is always legal
+        legal = [self.board_size**2]
         for i in range(self.board_size):
             for j in range(self.board_size):
                 if self.utils.is_valid_move(board=self.board,move=(i,j)):
                     legal.append(i * self.board_size + j)
-        return legal
+        return [Action(index) for index in legal]
 
     def total_rewards(self):
 
@@ -108,6 +110,43 @@ class Go7x7:
 
     def is_finished(self):
         return self.utils.is_game_finished(board=self.board)
+
+    def to_play(self):
+        return self.board.player
+
+    def action_history(self) -> ActionHistory:
+
+        return ActionHistory(self.board.game_history, self.action_space_size,self.board.player)
+
+    def make_target(self, state_index: int, num_unroll_steps: int, td_steps: int, to_play: Player,
+                    action_space_size: int):
+
+        # The value target is the discounted root value of the search tree N steps
+        # into the future, plus the discounted sum of all rewards until then.
+        targets = []
+        for current_index in range(state_index, state_index + num_unroll_steps + 1):
+            bootstrap_index = current_index + td_steps
+            if bootstrap_index < len(self.root_values):
+                value = self.root_values[bootstrap_index] * self.discount ** td_steps
+            else:
+                value = 0
+
+            for i, reward in enumerate(self.rewards[current_index:bootstrap_index]):
+                value += reward * self.discount ** i  # pytype: disable=unsupported-operands
+
+            if current_index > 0 and current_index <= len(self.rewards):
+                last_reward = self.rewards[current_index - 1]
+            else:
+                last_reward = None
+
+            if current_index < len(self.root_values):
+                targets.append((value, last_reward, self.child_visits[current_index]))
+            else:
+                # States past the end of games are treated as absorbing states.
+                targets.append((0, last_reward, []))
+
+        return targets
+
 
 if __name__ == "__main__":
     pass
