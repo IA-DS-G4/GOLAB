@@ -1,11 +1,11 @@
 import time
 import numpy as np
 import math
-from mcts import MinMaxStats, SharedStorage, ReplayBuffer, Node, Action, Player
+from mcts import MinMaxStats, SharedStorage, ReplayBuffer
 from muzeroconfig import MuZeroConfig
 from nn_models import Network, NetworkOutput
-from typing import List, Optional
-from Wrappers import ActionHistory
+from typing import List
+from Wrappers import ActionHistory, Action, Player, Node
 
 
 # Each self-play job is independent of all others; it takes the latest network
@@ -28,11 +28,11 @@ def run_selfplay(config: MuZeroConfig,
 def play_game(config: MuZeroConfig, network: Network):
     game = config.new_game()
 
-    while not game.terminal() and len(game.history) < config.max_moves:
+    while not game.is_finished() and len(game.history) < config.max_moves:
         # At the root of the search tree we use the representation function to
         # obtain a hidden state given the current observation.
         root = Node(0)
-        current_observation = game.make_image(-1)
+        current_observation = game.get_observation(-1)
         expand_node(root,
                     game.to_play(),
                     game.legal_actions(),

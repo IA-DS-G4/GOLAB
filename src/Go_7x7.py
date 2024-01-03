@@ -4,7 +4,10 @@ from go_utils import GoUtils
 from muzeroconfig import MuZeroConfig
 
 
+class Go7x7Config(MuZeroConfig):
 
+    def new_game(self):
+        return Go7x7()
 
 def make_Go7x7_config() -> MuZeroConfig:
     def visit_softmax_temperature(num_moves, training_steps):
@@ -28,20 +31,19 @@ def make_Go7x7_config() -> MuZeroConfig:
         else:
             return 0.001
 
-    return MuZeroConfig(action_space_size=2,
-                          observation_space_size=4,
-                          max_moves=500,
-                          discount=0.997,
-                          dirichlet_alpha=0.25,
-                          num_simulations=150,
-                          batch_size=100,
-                          td_steps=7,
-                          lr_init=0.0001,
-                          lr_decay_steps=5000,
-                          training_episodes=225,
-                          hidden_layer_size=32,
-                          visit_softmax_temperature_fn=visit_softmax_temperature,
-                          Game= Go7x7())
+    return Go7x7Config(action_space_size=(7*7)+1,
+                        observation_space_size= 7*7,
+                        max_moves=500,
+                        discount=0.997,
+                        dirichlet_alpha=0.25,
+                        num_simulations=150,
+                        batch_size=100,
+                        td_steps=7,
+                        lr_init=0.0001,
+                        lr_decay_steps=5000,
+                        training_episodes=225,
+                        hidden_layer_size=32,
+                        visit_softmax_temperature_fn=visit_softmax_temperature)
 
 
 class Go7x7:
@@ -88,7 +90,7 @@ class Go7x7:
     def get_observation(self):
         board_player1 = numpy.where(self.board.board_grid == 1, 1.0, 0.0)
         board_player2 = numpy.where(self.board.board_grid == -1, 1.0, 0.0)
-        board_to_play = numpy.full((self.board_size,self.board_size), self.player, dtype="int32")
+        board_to_play = numpy.array(self.board.board_grid, dtype="int32")
         return numpy.array([board_player1, board_player2, board_to_play])
 
     def legal_actions(self):

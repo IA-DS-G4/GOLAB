@@ -3,7 +3,7 @@ import numpy as np
 from typing import List
 from muzeroconfig import MuZeroConfig
 from nn_models import Network, NetworkOutput
-from Wrappers import ActionHistory, Action, Player
+from Wrappers import ActionHistory, Action, Player, Node
 
 
 MAXIMUM_FLOAT_VALUE = float('inf')
@@ -26,28 +26,6 @@ class MinMaxStats:
             return (value - self.minimum) / (self.maximum - self.minimum)
         return value
 
-class Node(object):
-
-    def __init__(self, prior: float):
-
-        self.visit_count = 0
-        self.to_play = -1
-        self.prior = prior
-        self.value_sum = 0
-        self.children = {}
-        self.hidden_state = None
-        self.reward = 0
-
-    def expanded(self) -> bool:
-
-        return len(self.children) > 0
-
-    def value(self) -> float:
-
-        if self.visit_count == 0:
-            return 0
-        else:
-            return self.value_sum / self.visit_count
 
 class MCTS:
     """
@@ -234,30 +212,6 @@ class ReplayBuffer(object):
 
     def last_game(self):
         return self.buffer[-1]
-
-class Game(object):
-    """A single episode of interaction with the environment."""
-
-    def __init__(self, action_space_size: int, discount: float):
-
-        self.environment = self.create_environment()
-        self.history = []
-        self.rewards = []
-        self.child_visits = []
-        self.root_values = []
-        self.action_space_size = action_space_size
-        self.discount = discount
-
-    def create_environment(self):
-
-        # Game specific environment.
-        pass
-
-    def terminal(self) -> bool:
-
-        # Game specific termination rules.
-        pass
-
 
 
     def store_search_statistics(self, root: Node):
