@@ -42,7 +42,7 @@ def play_game(config: MuZeroConfig, network: Network):
         # We then run a Monte Carlo Tree Search using only action sequences and the
         # model learned by the network.
         run_mcts(config, root, game.action_history(), network)
-        action = select_action(config, len(game.history), root, network)
+        action = select_action(config, len(game.action_history_list), root, network)
         game.apply(action)
         game.store_search_statistics(root)
 
