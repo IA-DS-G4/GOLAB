@@ -3,7 +3,8 @@ from go_board import GoBoard
 from go_utils import GoUtils
 from muzeroconfig import MuZeroConfig, ActionHistory
 from typing import List
-from Wrappers import Action, Player
+from Wrappers import Action, Player, Node
+import tensorflow as tf
 
 
 class Go7x7Config(MuZeroConfig):
@@ -33,8 +34,9 @@ def make_Go7x7_config() -> MuZeroConfig:
         else:
             return 0.001
 
-    return Go7x7Config(action_space_size=(7*7)+1,
-                        observation_space_size= 7*7,
+    return Go7x7Config(action_space_size= 50,
+                        observation_space_size= 49,
+                        observation_space_shape= (7,7),
                         max_moves=500,
                         discount=0.997,
                         dirichlet_alpha=0.25,
@@ -44,7 +46,7 @@ def make_Go7x7_config() -> MuZeroConfig:
                         lr_init=0.0001,
                         lr_decay_steps=5000,
                         training_episodes=225,
-                        hidden_layer_size=(7*7)+1,
+                        hidden_layer_size= 49,
                         visit_softmax_temperature_fn=visit_softmax_temperature)
 
 
@@ -57,21 +59,21 @@ class Go7x7:
         self.observation_space_shape = (self.board_size,self.board_size)
         self.observation_space_size = self.board_size**2
         self.action_space_size = (self.board_size**2)+1
+        self.action_history_list = []
         self.rewards = []
-
-    def to_play(self):
-        return 0 if self.player == 1 else 1
-
+        self.child_visits = []
+        self.root_values = []
+        self.discount = 0.997
     def reset(self):
         self.player = 1
         self.board = GoBoard(board_dimension=self.board_size, player=self.player)
         return self.get_observation()
 
     def step(self, action):
-        r = numpy.floor(action / self.board_size)
-        c = action % self.board_size
+        r = numpy.floor(action.index / self.board_size)
+        c = action.index % self.board_size
         move = (r,c)
-        if action == self.board_size**2:
+        if action.index == self.board_size**2:
             move = (-1,-1)
         self.utils.make_move(board=self.board,move=move)
         done = self.utils.is_game_finished(board=self.board)
@@ -86,14 +88,12 @@ class Go7x7:
 
         observation, reward, done = self.step(action)
         self.rewards.append(reward)
-        #self.history.append(action)???????????????????????????????????
+        self.action_history_list.append(action)
+
 
 
     def get_observation(self):
-        board_player1 = numpy.where(self.board.board_grid == 1, 1.0, 0.0)
-        board_player2 = numpy.where(self.board.board_grid == -1, 1.0, 0.0)
-        board_to_play = numpy.array(self.board.board_grid, dtype="int32")
-        return numpy.array([board_player1, board_player2, board_to_play])
+        return tf.constant([self.board.board_grid],dtype="int32")
 
     def legal_actions(self)-> List[Action]:
         # Pass = boardsize**2 is always legal
@@ -112,11 +112,21 @@ class Go7x7:
         return self.utils.is_game_finished(board=self.board)
 
     def to_play(self):
-        return self.board.player
+        return Player(self.board.player)
 
     def action_history(self) -> ActionHistory:
 
-        return ActionHistory(self.board.game_history, self.action_space_size,self.board.player)
+        return ActionHistory(self.action_history_list, self.action_space_size,self.board.player)
+
+    def store_search_statistics(self, root: Node):
+
+        sum_visits = sum(child.visit_count for child in root.children.values())
+        action_space = (Action(index) for index in range(self.action_space_size))
+        self.child_visits.append([
+            root.children[a].visit_count / sum_visits if a in root.children else 0
+            for a in action_space
+        ])
+        self.root_values.append(root.value())
 
     def make_target(self, state_index: int, num_unroll_steps: int, td_steps: int, to_play: Player,
                     action_space_size: int):

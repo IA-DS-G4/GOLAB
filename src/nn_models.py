@@ -40,7 +40,8 @@ class Network(object):
     def __init__(self, config):
         # regularizer = L2(config.weight_decay)
 
-        self.representation = keras.Sequential([Dense(config.hidden_layer_size, activation='relu'),
+        self.representation = keras.Sequential([Flatten(input_shape=config.observation_space_shape),
+                                                Dense(config.hidden_layer_size, activation='relu'),
                                                 Dense(config.hidden_layer_size)])
 
         self.value = keras.Sequential([Dense(config.hidden_layer_size, activation='relu'),
@@ -61,17 +62,13 @@ class Network(object):
 
     def initial_inference(self, image) -> NetworkOutput:
         # representation + prediction function
-
-        hidden_state = self.representation(np.expand_dims(image, 0))
-
+        hidden_state = self.representation(image)
         # hidden_state = tf.keras.utils.normalize(hidden_state)
 
         value = self.value(hidden_state)
         policy = self.policy(hidden_state)
         reward = tf.constant([[0]], dtype=tf.float32)
         policy_p = policy[0]
-        list_actions = {Action(a): policy_p[a] for a in range(len(policy_p))}
-        print(list_actions)
         return NetworkOutput(value,
                              reward,
                              {Action(a): policy_p[a] for a in range(len(policy_p))},

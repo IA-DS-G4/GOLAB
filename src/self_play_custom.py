@@ -32,7 +32,7 @@ def play_game(config: MuZeroConfig, network: Network):
         # At the root of the search tree we use the representation function to
         # obtain a hidden state given the current observation.
         root = Node(0)
-        current_observation = game.get_observation()[-1]
+        current_observation = game.get_observation()
         expand_node(root,
                     game.to_play(),
                     game.legal_actions(),
@@ -77,7 +77,6 @@ def run_mcts(config: MuZeroConfig,
         network_output = network.recurrent_inference(parent.hidden_state,
                                                      history.last_action())
         expand_node(node, history.to_play(), history.action_space(), network_output)
-
         backpropagate(search_path,
                       network_output.value,
                       history.to_play(),
@@ -108,8 +107,6 @@ def select_action(config: MuZeroConfig,
 # Select the child with the highest UCB score.
 
 def select_child(config: MuZeroConfig, node: Node, min_max_stats: MinMaxStats):
-    lsit = [(ucb_score(config, node, child, min_max_stats), action, child) for action, child in node.children.items()]
-    print(lsit)
     _, action, child = max((ucb_score(config, node, child, min_max_stats), action, child) for action, child in node.children.items())
     return action, child
 
@@ -119,13 +116,11 @@ def select_child(config: MuZeroConfig, node: Node, min_max_stats: MinMaxStats):
 def ucb_score(config: MuZeroConfig, parent: Node, child: Node, min_max_stats: MinMaxStats) -> float:
     pb_c = math.log((parent.visit_count + config.pb_c_base + 1) / config.pb_c_base) + config.pb_c_init
     pb_c *= math.sqrt(parent.visit_count) / (child.visit_count + 1)
-
     prior_score = pb_c * child.prior
     if child.visit_count > 0:
         value_score = min_max_stats.normalize(child.reward + config.discount * child.value())
     else:
         value_score = 0
-    assert isinstance(prior_score + value_score, float), f"ucb score is not a float error, check gamefile. score is: {prior_score+ value_score}"
     return prior_score + value_score
 
 
@@ -135,7 +130,6 @@ def expand_node(node: Node, to_play: Player, actions: List[Action], network_outp
     node.to_play = to_play
     node.hidden_state = network_output.hidden_state
     node.reward = network_output.reward
-    #print(actions)
     #policy = {a: math.exp(network_output.policy_logits[a]) for a in actions}
     #policy_sum = sum(policy.values())
     #for action, p in policy.items():

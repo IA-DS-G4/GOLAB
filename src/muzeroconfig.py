@@ -11,6 +11,7 @@ class MuZeroConfig:
     def __init__(self,
                  action_space_size: int,
                  observation_space_size: int,
+                 observation_space_shape: (int,int),
                  max_moves: int,
                  discount: float,
                  dirichlet_alpha: float,
@@ -31,7 +32,8 @@ class MuZeroConfig:
         self.max_num_gpus = None  # Fix the maximum number of GPUs to use. It's usually faster to use a single GPU (set it to 1) if it has enough memory. None will use every GPUs available
 
         ### Game
-        self.observation_shape = observation_space_size  # Dimensions of the game observation, must be 3 (channel, height, width). For a 1D array, please reshape it to (1, 1, length of array)
+        self.observation_space_size = observation_space_size
+        self.observation_space_shape = observation_space_shape  # Dimensions of the game observation, must be 3 (channel, height, width). For a 1D array, please reshape it to (1, 1, length of array)
         self.action_space_size = action_space_size  # Fixed list of all possible actions. You should only edit the length
 
         ### Self-Play

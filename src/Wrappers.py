@@ -36,7 +36,7 @@ class ActionHistory(object):
     """
 
     def __init__(self, history: List[Action], action_space_size: int, player):
-        self.history = list(history)
+        self.history = history
         self.action_space_size = action_space_size
         self.player = player
 
