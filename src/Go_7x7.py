@@ -70,10 +70,10 @@ class Go7x7:
         return self.get_observation()
 
     def step(self, action):
-        r = numpy.floor(action.index / self.board_size)
-        c = action.index % self.board_size
+        r = numpy.floor(action / self.board_size)
+        c = action % self.board_size
         move = (r,c)
-        if action.index == self.board_size**2:
+        if action == self.board_size**2:
             move = (-1,-1)
         self.utils.make_move(board=self.board,move=move)
         done = self.utils.is_game_finished(board=self.board)
@@ -86,7 +86,7 @@ class Go7x7:
 
     def apply(self, action: Action):
 
-        observation, reward, done = self.step(action)
+        observation, reward, done = self.step(action.index)
         self.rewards.append(reward)
         self.action_history_list.append(action)
 

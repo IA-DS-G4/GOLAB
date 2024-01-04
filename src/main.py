@@ -146,6 +146,3 @@ def muzero(config: MuZeroConfig):
 if __name__ == "__main__":
     muzero(make_Go7x7_config())
 
-
-# 502-00002101780.2
-# DE76 6000 0000 0060 0015 06
