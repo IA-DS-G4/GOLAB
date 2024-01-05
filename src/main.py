@@ -135,7 +135,7 @@ def muzero(config: MuZeroConfig):
         plt.show()
 
         # training
-        loss = train_network(config, storage, replay_buffer, i).numpy()[0]
+        loss = train_network(config, storage, replay_buffer, i)
 
         # print and plot loss
         print('Loss: ' + str(loss))

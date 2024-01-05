@@ -37,7 +37,7 @@ def make_Go7x7_config() -> MuZeroConfig:
     return Go7x7Config(action_space_size= 50,
                         observation_space_size= 49,
                         observation_space_shape= (7,7),
-                        max_moves=500,
+                        max_moves=150,
                         discount=0.997,
                         dirichlet_alpha=0.25,
                         num_simulations=150,
