@@ -1,19 +1,11 @@
-import tensorflow as tf
-import keras
 import numpy as np
 from Wrappers import Action
 import typing
 from typing import NamedTuple, Dict, List, Optional
-
-from tensorflow.python.keras.layers import (
-    Dense,
-    Dropout,
-    Flatten,
-    Conv2D,
-    MaxPool2D,
-    Activation,
-    GlobalAveragePooling2D,
-)
+from tensorflow.python.keras import layers
+from tensorflow.python.keras import models
+import tensorflow as tf
+import tensorflow.python.keras as k
 
 
 '''
@@ -40,21 +32,26 @@ class Network(object):
     def __init__(self, config):
         # regularizer = L2(config.weight_decay)
 
-        self.representation = keras.Sequential([Flatten(input_shape=config.observation_space_shape),
-                                                Dense(config.hidden_layer_size, activation='relu'),
-                                                Dense(config.hidden_layer_size)])
+        self.representation = k.Sequential()
+        self.representation.add(layers.Flatten(input_shape=config.observation_space_shape))
+        self.representation.add(layers.Dense(config.hidden_layer_size, activation='relu'))
+        self.representation.add(layers.Dense(config.hidden_layer_size, activation='relu'))
 
-        self.value = keras.Sequential([Dense(config.hidden_layer_size, activation='relu'),
-                                       Dense(1, activation='relu')])
+        self.value = k.Sequential()
+        self.value.add(layers.Dense(config.hidden_layer_size, activation='relu'))
+        self.value.add(layers.Dense(1, activation=None))  # No activation for value output
 
-        self.policy = keras.Sequential([Dense(config.hidden_layer_size, activation='relu'),
-                                        Dense(config.action_space_size, activation='softmax')])
+        self.policy = k.Sequential()
+        self.policy.add(layers.Dense(config.hidden_layer_size, activation='relu'))
+        self.policy.add(layers.Dense(config.action_space_size, activation=None))  # No activation for policy output
 
-        self.reward = keras.Sequential([Dense(config.hidden_layer_size, activation='relu'),
-                                        Dense(1, activation='relu')])
+        self.reward = k.Sequential()
+        self.reward.add(layers.Dense(config.hidden_layer_size, activation='relu'))
+        self.reward.add(layers.Dense(1, activation=None))  # No activation for reward output
 
-        self.dynamics = keras.Sequential([Dense(config.hidden_layer_size, activation='relu'),
-                                          Dense(config.hidden_layer_size)])
+        self.dynamics = k.Sequential()
+        self.dynamics.add(layers.Dense(config.hidden_layer_size, activation='relu'))
+        self.dynamics.add(layers.Dense(config.hidden_layer_size, activation='relu'))
 
         self.tot_training_steps = 0
 

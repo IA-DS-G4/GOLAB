@@ -87,7 +87,7 @@ def update_weights(optimizer: tf.keras.optimizers.Optimizer, network: Network, b
 def train_network(config: MuZeroConfig, storage: SharedStorage, replay_buffer: ReplayBuffer, iterations: int):
     network = storage.latest_network()
     learning_rate = config.lr_init * config.lr_decay_rate ** (iterations / config.lr_decay_steps)
-    optimizer = tf.keras.optimizers.SGD(learning_rate, config.momentum)
+    optimizer = tf.keras.optimizers.Adam(learning_rate)
 
     batch = replay_buffer.sample_batch(config.num_unroll_steps, config.td_steps, config.action_space_size)
     loss = update_weights(optimizer, network, batch, config.weight_decay)
