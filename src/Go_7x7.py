@@ -45,8 +45,8 @@ def make_Go7x7_config() -> MuZeroConfig:
                         td_steps=20,
                         lr_init=0.0001,
                         lr_decay_steps=5000,
-                        training_episodes=225,
-                        hidden_layer_size= 49,
+                        training_episodes=50,
+                        hidden_layer_size= 20,
                         visit_softmax_temperature_fn=visit_softmax_temperature)
 
 
@@ -61,18 +61,23 @@ class Go7x7:
         self.action_space_size = (self.board_size**2)+1
         self.action_history_list = []
         self.rewards = []
+        self.observation_list = []
         self.child_visits = []
         self.root_values = []
         self.discount = 0.997
     def reset(self):
         self.player = 1
         self.board = GoBoard(board_dimension=self.board_size, player=self.player)
-        return self.get_observation()
+        self.action_history_list = []
+        self.rewards = []
+        self.child_visits = []
+        self.root_values = []
 
     def step(self, action):
-        r = numpy.floor(action / self.board_size)
-        c = action % self.board_size
+        r = int(numpy.floor(action / self.board_size))
+        c = int(action % self.board_size)
         move = (r,c)
+        print(f"move{move}")
         if action == self.board_size**2:
             move = (-1,-1)
         self.utils.make_move(board=self.board,move=move)
@@ -89,6 +94,11 @@ class Go7x7:
         observation, reward, done = self.step(action.index)
         self.rewards.append(reward)
         self.action_history_list.append(action)
+        self.observation_list.append(observation)
+        self.done = done
+        if done:
+            self.reset()
+            print('rewards: ' + str(sum(self.rewards)))
 
 
 
@@ -105,7 +115,6 @@ class Go7x7:
         return [Action(index) for index in legal]
 
     def total_rewards(self):
-
         return sum(self.rewards)
 
     def is_finished(self):
