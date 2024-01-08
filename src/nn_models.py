@@ -6,6 +6,8 @@ from tensorflow.python.keras import layers
 from tensorflow.python.keras import models
 import tensorflow as tf
 import tensorflow.python.keras as k
+from keras import __version__
+k.__version__ = __version__
 
 
 '''
@@ -17,6 +19,7 @@ There are 4 networks:
 - The Policy network
 - The Reward network 
 '''
+
 
 
 class NetworkOutput(NamedTuple):
@@ -31,9 +34,11 @@ class Network(object):
 
     def __init__(self, config):
         # regularizer = L2(config.weight_decay)
+        self.observation_space_shape = config.observation_space_shape
+        self.hidden_layer_size = config.hidden_layer_size
 
         self.representation = k.Sequential()
-        self.representation.add(layers.Flatten(input_shape=config.observation_space_shape))
+        self.representation.add(layers.Flatten(input_shape=self.observation_space_shape))
         self.representation.add(layers.Dense(config.hidden_layer_size, activation='relu'))
         self.representation.add(layers.Dense(config.hidden_layer_size, activation='relu'))
 
@@ -79,6 +84,7 @@ class Network(object):
         b = np.eye(self.action_space_size)[action.index]
         nn_input = np.concatenate((a, b))
         nn_input = np.expand_dims(nn_input, axis=0)
+        self.nn_input = nn_input
 
         next_hidden_state = self.dynamics(nn_input)
 
@@ -110,26 +116,28 @@ class Network(object):
 
         return get_variables
 
-
     def save_model(self):
+        hidden_layer_size = (self.hidden_layer_size, self.hidden_layer_size)
 
         representation_network = self.representation
+        representation_network.build(input_shape=(self.observation_space_shape))
         representation_network.save(r"../Saved models/representation_network")
 
         value_network = self.value
+        value_network.build(input_shape=(hidden_layer_size))
         value_network.save(r"../Saved models/value_network")
 
         dynamics_network = self.dynamics
+        dynamics_network.build(input_shape=(self.nn_input))
         dynamics_network.save(r"../Saved models/dynamics_network")
 
         policy_network = self.policy
+        policy_network.build(input_shape=(hidden_layer_size))
         policy_network.save(r"../Saved models/policy_network")
 
         reward_network = self.reward
+        reward_network.build(input_shape=(self.nn_input))
         reward_network.save(r"../Saved models/reward_network")
-
-
-
 
     def get_weights(self):
         # Returns the weights of this network.
