@@ -111,6 +111,8 @@ def muzero(config: MuZeroConfig):
     t = time.time()
 
     for i in range(config.training_episodes):
+        if i % 25 == 0:
+
 
         # self-play
         launch_job(run_selfplay, config, storage, replay_buffer)

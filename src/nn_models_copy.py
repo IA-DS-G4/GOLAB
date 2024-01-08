@@ -28,7 +28,7 @@ from tensorflow.python.keras.layers import (
 Impementation of neural network in muzero algorithm for 7x7 game board
 
 There are 4 networks:
-- The Representation network (encoding network)
+- The Representation network (encoding network) --> convolutional network
 - The Value network
 - The Policy network
 - The Reward network 
@@ -73,6 +73,21 @@ class Network:
                 Dense(config.hidden_layer_size, kernel_regularizer=regularizer)
             ]
         )
+
+        self.representation = k.Sequential()
+        self.representation.add(layers.Dense(config.observation_space_size, activation="relu", input_shape=config.observation_space_size,kernel_regularizer=regularizer))
+        self.representation.add(layers.Conv2D(32, (3, 3), activation='relu', input_shape=config.observation_space_size, kernel_regularizer=regularizer))
+        self.representation.add(layers.MaxPool2D((2, 2)))
+        self.representation.add(layers.Conv2D(64, (3, 3), activation='relu', kernel_regularizer=regularizer))
+        self.representation.add(layers.MaxPool2D((2, 2)))
+        self.representation.add(layers.Flatten())
+        self.representation.add(layers.Dense(64, activation="relu", kernel_regularizer=regularizer))
+        self.representation.add(layers.Dense(config.hidden_layer_size, kernel_regularizer=regularizer))
+
+
+
+
+
 
         self.value = Sequential(
             [
