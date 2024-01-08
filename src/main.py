@@ -13,7 +13,7 @@ from Go_7x7 import make_Go7x7_config
 
 
 print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))
-print("TensorFlow is using GPU: ", tf.test.is_gpu_available()
+print("TensorFlow is using GPU: ", tf.test.is_gpu_available())
 
 
 def scalar_loss(prediction, target) -> float:
@@ -106,6 +106,8 @@ def launch_job(f, *args):
 
 
 def muzero(config: MuZeroConfig):
+
+    model_name = 'model1'
     storage = SharedStorage(config)
     replay_buffer = ReplayBuffer(config)
 
@@ -117,8 +119,9 @@ def muzero(config: MuZeroConfig):
 
     for i in range(config.training_episodes):
         #save model every 25 episodes
-        #if i % 25 == 0:
-        #   storage.save_network()
+        if i % 25 == 0:
+           storage.save_model(model_name)
+
 
         # self-play
         launch_job(run_selfplay, config, storage, replay_buffer)

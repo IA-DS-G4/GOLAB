@@ -178,8 +178,8 @@ class SharedStorage(object):
     def latest_network(self):
         return self.network
 
-    def save_network(self):
-        self.network.save_model()
+    def save_model(self, model_name):
+        self.network.save_model(model_name)
         pass
 
 
