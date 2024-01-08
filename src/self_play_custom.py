@@ -41,8 +41,8 @@ def play_game(config: MuZeroConfig, network: Network):
 
         # We then run a Monte Carlo Tree Search using only action sequences and the
         # model learned by the network.
-        run_mcts(config, root, game.action_history(), network)
-        action = select_action(config, len(game.action_history_list), root, network)
+        run_mcts(config, root, game, network)
+        action = select_action(config, len(game.action_history), root, network)
         game.apply(action)
         game.store_search_statistics(root)
 
@@ -56,13 +56,13 @@ def play_game(config: MuZeroConfig, network: Network):
 
 def run_mcts(config: MuZeroConfig,
              root: Node,
-             action_history: ActionHistory,
+             game,
              network: Network):
     min_max_stats = MinMaxStats()
 
     for _ in range(config.num_simulations):
 
-        history = action_history.clone()
+        history = game.get_action_history()
         node = root
         search_path = [node]
 
@@ -130,12 +130,12 @@ def expand_node(node: Node, to_play: Player, actions: List[Action], network_outp
     node.to_play = to_play
     node.hidden_state = network_output.hidden_state
     node.reward = network_output.reward
-    policy = {a: math.exp(network_output.policy_logits[a]) for a in actions}
-    policy_sum = sum(policy.values())
-    for action, p in policy.items():
-        node.children[action] = Node(p / policy_sum)
-    #for action, p in network_output.policy_logits.items():
-    #    node.children[action] = Node(p)
+    #policy = {a: math.exp(network_output.policy_logits[a]) for a in actions}
+    #policy_sum = sum(policy.values())
+    #for action, p in policy.items():
+    #    node.children[action] = Node(p / policy_sum)
+    for action, p in network_output.policy_logits.items():
+        node.children[action] = Node(p)
 
 
 # At the end of a simulation, we propagate the evaluation all the way up the tree to the root.

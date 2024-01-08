@@ -24,10 +24,7 @@ class GoBoard():
 
     def flip_player(self):
         #Update the player to the other player
-        if self.player == 1:
-            self.player = -1
-        else:
-            self.player = 1
+        self.player *= -1
 
     def generate_augmented_boards(self):
         #augment the training data using the flipped version and rotated version of the board itself

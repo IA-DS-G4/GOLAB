@@ -59,7 +59,7 @@ class Go7x7:
         self.observation_space_shape = (self.board_size,self.board_size)
         self.observation_space_size = self.board_size**2
         self.action_space_size = (self.board_size**2)+1
-        self.action_history_list = []
+        self.action_history = []
         self.rewards = []
         self.observation_list = []
         self.child_visits = []
@@ -68,7 +68,7 @@ class Go7x7:
     def reset(self):
         self.player = 1
         self.board = GoBoard(board_dimension=self.board_size, player=self.player)
-        self.action_history_list = []
+        self.action_history = []
         self.rewards = []
         self.child_visits = []
         self.root_values = []
@@ -77,23 +77,25 @@ class Go7x7:
         r = int(numpy.floor(action / self.board_size))
         c = int(action % self.board_size)
         move = (r,c)
-        print(f"move{move}")
         if action == self.board_size**2:
             move = (-1,-1)
-        self.utils.make_move(board=self.board,move=move)
+        move_viable, self.board = self.utils.make_move(board=self.board,move=move)
+        print(f"move{move} from Player {self.board.player*(-1)}")
+        if not move_viable:
+            print("Illegal mover error, giving negative reward")
+            self.done = True
         done = self.utils.is_game_finished(board=self.board)
-        if done:
+        if done and move_viable:
             reward = 1 if self.utils.evaluate_winner(board_grid=self.board.board_grid)[0] == self.player else -1
         else:
             reward = 0
-        self.player *= -1
         return self.get_observation(), reward, done
 
     def apply(self, action: Action):
 
         observation, reward, done = self.step(action.index)
         self.rewards.append(reward)
-        self.action_history_list.append(action)
+        self.action_history.append(action)
         self.observation_list.append(observation)
         self.done = done
         if done:
@@ -118,19 +120,21 @@ class Go7x7:
         return sum(self.rewards)
 
     def is_finished(self):
+        if self.utils.is_game_finished(board=self.board):
+            print("game is finished!")
         return self.utils.is_game_finished(board=self.board)
 
     def to_play(self):
         return Player(self.board.player)
 
-    def action_history(self) -> ActionHistory:
+    def get_action_history(self) -> ActionHistory:
 
-        return ActionHistory(self.action_history_list, self.action_space_size,self.board.player)
+        return ActionHistory(self.action_history, self.action_space_size,self.board.player)
 
     def store_search_statistics(self, root: Node):
 
         sum_visits = sum(child.visit_count for child in root.children.values())
-        action_space = (Action(index) for index in range(self.action_space_size))
+        action_space = (action for action in self.legal_actions())
         self.child_visits.append([
             root.children[a].visit_count / sum_visits if a in root.children else 0
             for a in action_space
