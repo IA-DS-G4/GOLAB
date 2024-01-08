@@ -111,6 +111,9 @@ def muzero(config: MuZeroConfig):
     t = time.time()
 
     for i in range(config.training_episodes):
+        #save model every 25 episodes
+        if i % 25 == 0:
+            storage.save_network()
 
         # self-play
         launch_job(run_selfplay, config, storage, replay_buffer)

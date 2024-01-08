@@ -179,6 +179,7 @@ class SharedStorage(object):
         return self.network
 
     def save_network(self, step: int, network: Network):
+        self.network.save_model()
         pass
 
 

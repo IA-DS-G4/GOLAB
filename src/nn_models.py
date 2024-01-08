@@ -110,6 +110,27 @@ class Network(object):
 
         return get_variables
 
+
+    def save_model(self):
+
+        representation_network = self.representation
+        representation_network.save(r"../Saved models/representation_network")
+
+        value_network = self.value
+        value_network.save(r"../Saved models/value_network")
+
+        dynamics_network = self.dynamics
+        dynamics_network.save(r"../Saved models/dynamics_network")
+
+        policy_network = self.policy
+        policy_network.save(r"../Saved models/policy_network")
+
+        reward_network = self.reward
+        reward_network.save(r"../Saved models/reward_network")
+
+
+
+
     def get_weights(self):
         # Returns the weights of this network.
 
@@ -126,14 +147,3 @@ class Network(object):
         # How many steps / batches the network has been trained for.
         return self.tot_training_steps
 
-
-class SharedStorage(object):
-
-    def __init__(self, config):
-        self.network = Network(config)
-
-    def latest_network(self):
-        return self.network
-
-    def save_network(self, step: int, network: Network):
-        pass
