@@ -28,7 +28,7 @@ def run_selfplay(config: MuZeroConfig,
 def play_game(config: MuZeroConfig, network: Network):
     game = config.new_game()
 
-    while not game.is_finished() and len(game.board.game_history) < config.max_moves:
+    while not game.done and len(game.board.game_history) < config.max_moves:
         # At the root of the search tree we use the representation function to
         # obtain a hidden state given the current observation.
         root = Node(0)

@@ -38,16 +38,17 @@ def make_Go7x7_config() -> MuZeroConfig:
                         observation_space_size= 49,
                         observation_space_shape= (7,7),
                         max_moves=150,
-                        discount=0.997,
-                        dirichlet_alpha=0.25,
-                        num_simulations=150,
+                        discount=0.999,
+                        dirichlet_alpha=0.5,
+                        num_simulations=10,
                         batch_size=100,
-                        td_steps=20,
+                        td_steps=70,
                         lr_init=0.0001,
                         lr_decay_steps=5000,
                         training_episodes=50,
-                        hidden_layer_size= 20,
-                        visit_softmax_temperature_fn=visit_softmax_temperature)
+                        hidden_layer_size= 50,
+                        visit_softmax_temperature_fn=visit_softmax_temperature,
+                        num_actors=2)
 
 
 class Go7x7:
@@ -64,7 +65,8 @@ class Go7x7:
         self.observation_list = []
         self.child_visits = []
         self.root_values = []
-        self.discount = 0.997
+        self.discount = 0.999
+        self.done = False
     def reset(self):
         self.player = 1
         self.board = GoBoard(board_dimension=self.board_size, player=self.player)
@@ -82,12 +84,14 @@ class Go7x7:
         move_viable, self.board = self.utils.make_move(board=self.board,move=move)
         print(f"move{move} from Player {self.board.player*(-1)}")
         if not move_viable:
-            print("Illegal mover error, giving negative reward")
-            self.done = True
+            print("Illegal move, giving negative reward")
+            done = True
+            reward = -1
+            return self.get_observation(), reward, done
         done = self.utils.is_game_finished(board=self.board)
         if done and move_viable:
             reward = 1 if self.utils.evaluate_winner(board_grid=self.board.board_grid)[0] == self.player else -1
-        else:
+        elif not done and move_viable:
             reward = 0
         return self.get_observation(), reward, done
 
@@ -99,8 +103,8 @@ class Go7x7:
         self.observation_list.append(observation)
         self.done = done
         if done:
+            print(f"rewards: {self.total_rewards()}")
             self.reset()
-            print('rewards: ' + str(sum(self.rewards)))
 
 
 
@@ -120,9 +124,10 @@ class Go7x7:
         return sum(self.rewards)
 
     def is_finished(self):
-        if self.utils.is_game_finished(board=self.board):
+        finished = self.utils.is_game_finished(board=self.board)
+        if finished:
             print("game is finished!")
-        return self.utils.is_game_finished(board=self.board)
+        return finished
 
     def to_play(self):
         return Player(self.board.player)

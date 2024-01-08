@@ -6,7 +6,8 @@ from Wrappers import Player, Action, ActionHistory, Node
 
 KnownBounds = collections.namedtuple('KnownBounds', ['min', 'max'])
 
-class MuZeroConfig:
+
+class MuZeroConfig(object):
 
     def __init__(self,
                  action_space_size: int,
@@ -18,26 +19,18 @@ class MuZeroConfig:
                  num_simulations: int,
                  batch_size: int,
                  td_steps: int,
+                 num_actors: int,
                  lr_init: float,
                  lr_decay_steps: float,
                  training_episodes: int,
                  hidden_layer_size: int,
                  visit_softmax_temperature_fn,
-                 known_bounds: Optional[KnownBounds] = None,
-                 Game = None):
-        # fmt: off
-        # More information is available here: https://github.com/werner-duvaud/muzero-general/wiki/Hyperparameter-Optimization
-
-        self.seed = 0  # Seed for numpy, torch and the game
-        self.max_num_gpus = None  # Fix the maximum number of GPUs to use. It's usually faster to use a single GPU (set it to 1) if it has enough memory. None will use every GPUs available
-
-        ### Game
-        self.observation_space_size = observation_space_size
-        self.observation_space_shape = observation_space_shape  # Dimensions of the game observation, must be 3 (channel, height, width). For a 1D array, please reshape it to (1, 1, length of array)
-        self.action_space_size = action_space_size  # Fixed list of all possible actions. You should only edit the length
-
+                 known_bounds: Optional[KnownBounds] = None):
         ### Self-Play
-        self.num_actors = 2
+        self.action_space_size = action_space_size
+        self.observation_space_size = observation_space_size
+        self.observation_space_shape = observation_space_shape
+        self.num_actors = num_actors
 
         self.visit_softmax_temperature_fn = visit_softmax_temperature_fn
         self.max_moves = max_moves
@@ -52,7 +45,10 @@ class MuZeroConfig:
         self.pb_c_base = 19652
         self.pb_c_init = 1.25
 
-        #rewards in the environment are -1 for loose and 1 for win
+        # If we already have some information about which values occur in the
+        # environment, we can use them to initialize the rescaling.
+        # This is not strictly necessary, but establishes identical behaviour to
+        # AlphaZero in board games.
         self.known_bounds = known_bounds
 
         ### Training
