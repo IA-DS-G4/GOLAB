@@ -29,10 +29,8 @@ def make_Go7x7_config() -> MuZeroConfig:
             return 0.250
         elif training_steps < 225:
             return 0.125
-        elif training_steps < 250:
-            return 0.075
         else:
-            return 0.001
+            return 0.5
 
     return Go7x7Config(action_space_size= 50,
                         observation_space_size= 49,
@@ -41,7 +39,7 @@ def make_Go7x7_config() -> MuZeroConfig:
                         discount=0.999,
                         dirichlet_alpha=0.5,
                         num_simulations=25,
-                        batch_size=32,
+                        batch_size=16,
                         td_steps=70,
                         lr_init=0.0001,
                         lr_decay_steps=5000,
