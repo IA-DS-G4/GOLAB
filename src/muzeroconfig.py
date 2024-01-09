@@ -56,7 +56,7 @@ class MuZeroConfig(object):
         self.checkpoint_interval = int(1e3)
         self.window_size = int(1000)
         self.batch_size = batch_size
-        self.num_unroll_steps = 500
+        self.num_unroll_steps = 50
         self.td_steps = td_steps
 
         self.weight_decay = 1e-4

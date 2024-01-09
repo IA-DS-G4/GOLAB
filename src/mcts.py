@@ -198,9 +198,9 @@ class ReplayBuffer(object):
     def sample_batch(self, num_unroll_steps: int, td_steps: int, action_space_size: int):
         games = [self.sample_game() for _ in range(self.batch_size)]
         game_pos = [(g, self.sample_position(g)) for g in games]
-        return [(g.make_image(i),
-                 g.history[i:i + num_unroll_steps],
-                 g.make_target(i, num_unroll_steps, td_steps, g.to_play(), action_space_size))
+        return [(g.observation_list[i],
+                 g.action_history[i:i + num_unroll_steps],
+                 g.make_target(state_index=i,num_unroll_steps=num_unroll_steps, td_steps=td_steps, to_play=g.to_play(), action_space_size=action_space_size))
                 for (g, i) in game_pos]
 
     def sample_game(self):
@@ -213,56 +213,6 @@ class ReplayBuffer(object):
 
     def last_game(self):
         return self.buffer[-1]
-
-
-    def store_search_statistics(self, root: Node):
-
-        sum_visits = sum(child.visit_count for child in root.children.values())
-        action_space = (Action(index) for index in range(self.action_space_size))
-        self.child_visits.append([
-            root.children[a].visit_count / sum_visits if a in root.children else 0
-            for a in action_space
-        ])
-        self.root_values.append(root.value())
-
-    def make_image(self, state_index: int):
-
-        # Game specific feature planes.
-        pass
-
-    def make_target(self, state_index: int, num_unroll_steps: int, td_steps: int, to_play: Player,
-                    action_space_size: int):
-
-        # The value target is the discounted root value of the search tree N steps
-        # into the future, plus the discounted sum of all rewards until then.
-        targets = []
-        for current_index in range(state_index, state_index + num_unroll_steps + 1):
-            bootstrap_index = current_index + td_steps
-            if bootstrap_index < len(self.root_values):
-                value = self.root_values[bootstrap_index] * self.discount ** td_steps
-            else:
-                value = 0
-
-            for i, reward in enumerate(self.rewards[current_index:bootstrap_index]):
-                value += reward * self.discount ** i  # pytype: disable=unsupported-operands
-
-            if current_index > 0 and current_index <= len(self.rewards):
-                last_reward = self.rewards[current_index - 1]
-            else:
-                last_reward = None
-
-            if current_index < len(self.root_values):
-                targets.append((value, last_reward, self.child_visits[current_index]))
-            else:
-                # States past the end of games are treated as absorbing states.
-                targets.append((0, last_reward, []))
-
-        return targets
-
-
-    def action_history(self) -> ActionHistory:
-
-        return ActionHistory(self.history, self.action_space_size)
 
 
 

@@ -13,7 +13,7 @@ from Go_7x7 import make_Go7x7_config
 
 
 print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))
-print("TensorFlow is using GPU: ", tf.test.is_gpu_available()
+print("TensorFlow is using GPU: ", tf.test.is_gpu_available())
 
 
 def scalar_loss(prediction, target) -> float:
@@ -31,7 +31,7 @@ def update_weights(optimizer: tf.keras.optimizers.Optimizer, network: Network, b
 
         loss = 0
 
-        for image, actions, targets in batch:
+        for (image, actions, targets) in batch:
 
             # Initial step, from the real observation.
             value, reward, _, policy_t, hidden_state = network.initial_inference(image)
@@ -92,7 +92,8 @@ def update_weights(optimizer: tf.keras.optimizers.Optimizer, network: Network, b
 def train_network(config: MuZeroConfig, storage: SharedStorage, replay_buffer: ReplayBuffer, iterations: int):
     network = storage.latest_network()
     learning_rate = config.lr_init * config.lr_decay_rate ** (iterations / config.lr_decay_steps)
-    optimizer = tf.keras.optimizers.Adam(learning_rate)
+    optimizer = tf.keras.optimizers.legacy.Adam()
+
 
     batch = replay_buffer.sample_batch(config.num_unroll_steps, config.td_steps, config.action_space_size)
     loss = update_weights(optimizer, network, batch, config.weight_decay)
@@ -133,8 +134,6 @@ def muzero(config: MuZeroConfig):
             clear_output(wait=True)
 
         print('Episode ' + str(i + 1) + ' ' + 'reward: ' + str(reward_e))
-        print('Moving Average (20): ' + str(np.mean(rewards[-20:])))
-        print('Moving Average (100): ' + str(np.mean(rewards[-100:])))
         print('Moving Average: ' + str(np.mean(rewards)))
         print('Elapsed time: ' + str((time.time() - t) / 60) + ' minutes')
 

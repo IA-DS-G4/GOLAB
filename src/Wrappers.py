@@ -1,8 +1,12 @@
 from typing import Dict, List, Optional
+import numpy as np
 class Action(object):
 
     def __init__(self, index: int):
-        self.index = index
+        if np.issubdtype(type(index), int) :
+            self.index = index
+        else:
+            self.index = index.index
 
     def __hash__(self):
         return self.index

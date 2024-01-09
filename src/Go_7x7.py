@@ -39,14 +39,14 @@ def make_Go7x7_config() -> MuZeroConfig:
                         observation_space_shape= (7,7),
                         max_moves=150,
                         discount=0.999,
-                        dirichlet_alpha=0.5,
-                        num_simulations=10,
+                        dirichlet_alpha=0.25,
+                        num_simulations=25,
                         batch_size=100,
                         td_steps=70,
                         lr_init=0.0001,
                         lr_decay_steps=5000,
                         training_episodes=50,
-                        hidden_layer_size= 50,
+                        hidden_layer_size= 49,
                         visit_softmax_temperature_fn=visit_softmax_temperature,
                         num_actors=2)
 
@@ -99,13 +99,9 @@ class Go7x7:
 
         observation, reward, done = self.step(action.index)
         self.rewards.append(reward)
-        self.action_history.append(action)
+        self.action_history.append(action.index)
         self.observation_list.append(observation)
         self.done = done
-        if done:
-            print(f"rewards: {self.total_rewards()}")
-            self.reset()
-
 
 
     def get_observation(self):
@@ -139,7 +135,7 @@ class Go7x7:
     def store_search_statistics(self, root: Node):
 
         sum_visits = sum(child.visit_count for child in root.children.values())
-        action_space = (action for action in self.legal_actions())
+        action_space = (Action(action) for action in range(self.action_space_size))
         self.child_visits.append([
             root.children[a].visit_count / sum_visits if a in root.children else 0
             for a in action_space
@@ -148,7 +144,6 @@ class Go7x7:
 
     def make_target(self, state_index: int, num_unroll_steps: int, td_steps: int, to_play: Player,
                     action_space_size: int):
-
         # The value target is the discounted root value of the search tree N steps
         # into the future, plus the discounted sum of all rewards until then.
         targets = []
@@ -165,14 +160,13 @@ class Go7x7:
             if current_index > 0 and current_index <= len(self.rewards):
                 last_reward = self.rewards[current_index - 1]
             else:
-                last_reward = None
+                last_reward = 0
 
             if current_index < len(self.root_values):
                 targets.append((value, last_reward, self.child_visits[current_index]))
             else:
                 # States past the end of games are treated as absorbing states.
                 targets.append((0, last_reward, []))
-
         return targets
 
 

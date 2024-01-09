@@ -43,8 +43,8 @@ def play_game(config: MuZeroConfig, network: Network):
         # model learned by the network.
         run_mcts(config, root, game, network)
         action = select_action(config, len(game.action_history), root, network)
-        game.apply(action)
         game.store_search_statistics(root)
+        game.apply(action)
 
     return game
 

@@ -79,7 +79,6 @@ class Network(object):
 
     def recurrent_inference(self, hidden_state, action) -> NetworkOutput:
         # dynamics + prediction function
-
         a = hidden_state.numpy()[0]
         b = np.eye(self.action_space_size)[action.index]
         nn_input = np.concatenate((a, b))
