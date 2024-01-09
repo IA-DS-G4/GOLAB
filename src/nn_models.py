@@ -65,7 +65,6 @@ class Network(object):
     def initial_inference(self, image) -> NetworkOutput:
         # representation + prediction function
         hidden_state = self.representation(image)
-        print(hidden_state.shape)
         # hidden_state = tf.keras.utils.normalize(hidden_state)
 
         value = self.value(hidden_state)
@@ -84,7 +83,6 @@ class Network(object):
         b = np.eye(self.action_space_size)[action.index]
         nn_input = np.concatenate((a, b))
         nn_input = np.expand_dims(nn_input, axis=0)
-        print(nn_input.shape)
 
         next_hidden_state = self.dynamics(nn_input)
 

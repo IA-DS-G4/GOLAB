@@ -15,10 +15,10 @@ from Wrappers import ActionHistory, Action, Player, Node
 def run_selfplay(config: MuZeroConfig,
                  storage: SharedStorage,
                  replay_buffer: ReplayBuffer):
-    # while True: # in theory, this should be a job (i.e. thread) that runs continuously
-    network = storage.latest_network()
-    game = play_game(config, network)
-    replay_buffer.save_game(game)
+    for _ in range(config.batch_size):
+        network = storage.latest_network()
+        game = play_game(config, network)
+        replay_buffer.save_game(game)
 
 
 # Each game is produced by starting at the initial board position, then

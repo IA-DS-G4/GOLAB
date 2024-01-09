@@ -120,29 +120,12 @@ def muzero(config: MuZeroConfig):
 
     for i in range(config.training_episodes):
         #save model every 25 episodes
-        if i % 25 == 0:
-           storage.save_model(model_name)
+ #       if i % 25 == 0:
+#           storage.save_model(model_name)
 
 
         # self-play
         launch_job(run_selfplay, config, storage, replay_buffer)
-
-        # print and plot rewards
-        game = replay_buffer.last_game()
-        reward_e = game.total_rewards()
-        rewards.append(reward_e)
-        moving_averages.append(np.mean(rewards[-20:]))
-
-        for _ in range(10):
-            clear_output(wait=True)
-
-        print('Episode ' + str(i + 1) + ' ' + 'reward: ' + str(reward_e))
-        print('Moving Average: ' + str(np.mean(rewards)))
-        print('Elapsed time: ' + str((time.time() - t) / 60) + ' minutes')
-
-        plt.plot(rewards)
-        plt.plot(moving_averages)
-        plt.show()
 
         # training
         loss = train_network(config, storage, replay_buffer, i)

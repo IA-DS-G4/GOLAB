@@ -178,9 +178,9 @@ class SharedStorage(object):
     def latest_network(self):
         return self.network
 
-    def save_model(self, model_name):
-        self.network.save_model(model_name)
-        pass
+  #  def save_model(self, model_name):
+   #     self.network.save_model(model_name)
+   #     pass
 
 
 class ReplayBuffer(object):
