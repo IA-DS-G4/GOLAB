@@ -100,6 +100,11 @@ def train_network(config: MuZeroConfig, storage: SharedStorage, replay_buffer: R
 
     network.tot_training_steps += 1
 
+    #save model every 25 episodes
+    if iterations % 25 == 0:
+        network.backup_count += 1
+        network.save_network_deepcopy()
+
     return loss
 
 def launch_job(f, *args):
@@ -119,10 +124,6 @@ def muzero(config: MuZeroConfig):
     t = time.time()
 
     for i in range(config.training_episodes):
-        #save model every 25 episodes
- #       if i % 25 == 0:
-#           storage.save_model(model_name)
-
 
         # self-play
         launch_job(run_selfplay, config, storage, replay_buffer)
@@ -135,6 +136,7 @@ def muzero(config: MuZeroConfig):
         losses.append(loss)
         plt.plot(losses)
         plt.show()
+
 
 if __name__ == "__main__":
     muzero(make_Go7x7_config())

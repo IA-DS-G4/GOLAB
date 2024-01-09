@@ -7,6 +7,7 @@ from tensorflow.python.keras import models
 import tensorflow as tf
 import tensorflow.python.keras as k
 from keras import __version__
+import copy
 k.__version__ = __version__
 
 
@@ -59,6 +60,7 @@ class Network(object):
         self.dynamics.add(layers.Dense(config.hidden_layer_size, activation='relu'))
 
         self.tot_training_steps = 0
+        self.backup_count = 0
 
         self.action_space_size = config.action_space_size
 
@@ -99,20 +101,6 @@ class Network(object):
                              policy,
                              next_hidden_state)
 
-    def get_weights_func(self):
-        # Returns the weights of this network.
-
-        def get_variables():
-            networks = (self.representation,
-                        self.value,
-                        self.policy,
-                        self.dynamics,
-                        self.reward)
-            return [variables
-                    for variables_list in map(lambda n: n.weights, networks)
-                    for variables in variables_list]
-
-        return get_variables
 
     def save_network(self, model_name):
 
@@ -155,3 +143,10 @@ class Network(object):
         # How many steps / batches the network has been trained for.
         return self.tot_training_steps
 
+    def save_network_deepcopy(self):
+
+        self.representation.save(f"../Saved models/backup{self.backup_count}/representation_network")
+        self.value.save(f"../Saved models/backup{self.backup_count}/value_network")
+        self.dynamics.save(f"../Saved models/backup{self.backup_count}/dynamics_network")
+        self.policy.save(f"../Saved models/backup{self.backup_count}/policy_network")
+        self.reward.save(f"../Saved models/backup{self.backup_count}/reward_network")

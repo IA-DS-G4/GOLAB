@@ -41,7 +41,7 @@ def make_Go7x7_config() -> MuZeroConfig:
                         discount=0.999,
                         dirichlet_alpha=0.5,
                         num_simulations=25,
-                        batch_size=16,
+                        batch_size=32,
                         td_steps=70,
                         lr_init=0.0001,
                         lr_decay_steps=5000,
