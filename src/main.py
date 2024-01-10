@@ -3,7 +3,7 @@ import numpy as np
 import tensorflow as tf
 import keras
 from muzeroconfig import MuZeroConfig
-from mcts import MinMaxStats, SharedStorage, ReplayBuffer
+from mcts import MinMaxStats, SharedStorage, ReplayBuffer, MCTS
 from matplotlib import pyplot as plt
 from nn_models import Network
 from self_play_custom import run_selfplay
@@ -117,9 +117,7 @@ def muzero(config: MuZeroConfig):
     storage = SharedStorage(config)
     replay_buffer = ReplayBuffer(config)
 
-    rewards = []
     losses = []
-    moving_averages = []
 
     t = time.time()
 
@@ -133,7 +131,7 @@ def muzero(config: MuZeroConfig):
 
         # print and plot loss
         print('Loss: ' + str(loss))
-        losses.append(loss)
+        losses.append(loss[0])
         plt.plot(losses)
         plt.show()
 

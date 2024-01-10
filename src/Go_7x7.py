@@ -30,7 +30,7 @@ def make_Go7x7_config() -> MuZeroConfig:
         elif training_steps < 225:
             return 0.125
         else:
-            return 0.5
+            return 0.125
 
     return Go7x7Config(action_space_size= 50,
                         observation_space_size= 49,
@@ -38,9 +38,9 @@ def make_Go7x7_config() -> MuZeroConfig:
                         max_moves=150,
                         discount=0.999,
                         dirichlet_alpha=0.5,
-                        num_simulations=25,
-                        batch_size=16,
-                        td_steps=70,
+                        num_simulations=15,
+                        batch_size=8,
+                        td_steps=5,
                         lr_init=0.0001,
                         lr_decay_steps=5000,
                         training_episodes=500,
@@ -80,9 +80,7 @@ class Go7x7:
         if action == self.board_size**2:
             move = (-1,-1)
         move_viable, self.board = self.utils.make_move(board=self.board,move=move)
-        print(f"move{move} from Player {self.board.player*(-1)}")
         if not move_viable:
-            print("Illegal move, giving negative reward")
             done = True
             reward = -1
             return self.get_observation(), reward, done
@@ -131,7 +129,6 @@ class Go7x7:
         return ActionHistory(self.action_history, self.action_space_size,self.board.player)
 
     def store_search_statistics(self, root: Node):
-
         sum_visits = sum(child.visit_count for child in root.children.values())
         action_space = (Action(action) for action in range(self.action_space_size))
         self.child_visits.append([
