@@ -24,8 +24,10 @@ class MuZeroConfig(object):
                  lr_decay_steps: float,
                  training_episodes: int,
                  hidden_layer_size: int,
+                 model_name: str,
                  visit_softmax_temperature_fn,
-                 known_bounds: Optional[KnownBounds] = None):
+                 known_bounds: Optional[KnownBounds] = None,
+                 ):
         ### Self-Play
         self.action_space_size = action_space_size
         self.observation_space_size = observation_space_size
@@ -61,13 +63,14 @@ class MuZeroConfig(object):
         self.momentum = 0.9
 
         self.training_episodes = training_episodes
-
         self.hidden_layer_size = hidden_layer_size
 
         # Exponential learning rate schedule
         self.lr_init = lr_init
         self.lr_decay_steps = lr_decay_steps
         self.lr_decay_rate = 0.1
+
+        self.model_name = model_name
 
     def new_game(self):
         return Game(self.action_space_size, self.discount)

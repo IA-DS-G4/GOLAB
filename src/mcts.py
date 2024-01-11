@@ -56,7 +56,7 @@ class MCTS:
             MCTS.run_mcts(config,root, game, network)
             action = MCTS.select_action(config, len(game.action_history), root, network)
             game.store_search_statistics(root)
-            print(f"move{action} from Player {game.board.player}")
+            #print(f"move{action} from Player {game.board.player}")
             game.apply(action)
         print(f"simulated game! Winner is Player {game.utils.evaluate_winner(game.board.board_grid)}")
         return game

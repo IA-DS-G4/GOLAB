@@ -24,12 +24,14 @@ print("TensorFlow is using GPU: ", tf.test.is_gpu_available())
 @profile
 def run_selfplay(config: MuZeroConfig,
                  storage: SharedStorage,
-                 replay_buffer: ReplayBuffer):
+                 replay_buffer: ReplayBuffer,
+                 iteration: int):
     mcts = MCTS()
     for _ in range(config.batch_size):
         network = storage.latest_network()
         game = mcts.play_game(config,network)
         replay_buffer.save_game(game)
+    print(f"Batch {iteration} creation completed. Starting training...")
 
 # Each game is produced by starting at the initial board position, then
 # repeatedly executing a Monte Carlo Tree Search to generate moves until the end
@@ -124,7 +126,7 @@ def train_network(config: MuZeroConfig, storage: SharedStorage, replay_buffer: R
     #save model every 25 episodes
     if iterations % 25 == 0 and iterations >0:
         network.backup_count += 1
-        network.save_network_deepcopy()
+        network.save_network_deepcopy(model_name=config.model_name)
 
     storage.save_network(network)
     tf.keras.backend.clear_session()
@@ -137,18 +139,15 @@ def launch_job(f, *args):
 
 def muzero(config: MuZeroConfig):
 
-    model_name = 'model1'
+    model_name = config.model_name
     storage = SharedStorage(config)
     replay_buffer = ReplayBuffer(config)
-
     losses = []
-
-    t = time.time()
 
     for i in range(config.training_episodes):
 
         # self-play
-        launch_job(run_selfplay, config, storage, replay_buffer)
+        launch_job(run_selfplay, config, storage, replay_buffer, i)
 
         # training
         loss = train_network(config, storage, replay_buffer, i)
@@ -156,8 +155,11 @@ def muzero(config: MuZeroConfig):
         # print and plot loss
         print('Loss: ' + str(loss))
         losses.append(loss[0])
-        plt.plot(losses)
+        plt.plot(losses, label=f"Loss {model_name}")
+        plt.ylabel("Loss")
+        plt.xlabel("batches processed")
         plt.show()
+        plt.savefig("Plots/loss_plot_" + model_name + ".png")
 
 if __name__ == "__main__":
     muzero(make_Go7x7_config())

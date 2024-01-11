@@ -167,13 +167,13 @@ class Network(object):
         # How many steps / batches the network has been trained for.
         return self.tot_training_steps
 
-    def save_network_deepcopy(self):
+    def save_network_deepcopy(self,model_name):
 
-        self.representation.save(f"../Saved models/backup{self.backup_count}/representation_network")
-        self.value.save(f"../Saved models/backup{self.backup_count}/value_network")
-        self.dynamics.save(f"../Saved models/backup{self.backup_count}/dynamics_network")
-        self.policy.save(f"../Saved models/backup{self.backup_count}/policy_network")
-        self.reward.save(f"../Saved models/backup{self.backup_count}/reward_network")
+        self.representation.save(f"../Saved models/{model_name}/backup{self.backup_count}/representation_network")
+        self.value.save(f"../Saved models/{model_name}/backup{self.backup_count}/value_network")
+        self.dynamics.save(f"../Saved models/{model_name}/backup{self.backup_count}/dynamics_network")
+        self.policy.save(f"../Saved models/{model_name}/backup{self.backup_count}/policy_network")
+        self.reward.save(f"../Saved models/{model_name}/backup{self.backup_count}/reward_network")
 
 
 if __name__ == "__main__":

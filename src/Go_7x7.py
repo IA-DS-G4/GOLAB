@@ -45,7 +45,8 @@ def make_Go7x7_config() -> MuZeroConfig:
                         training_episodes=500,
                         hidden_layer_size= 49,
                         visit_softmax_temperature_fn=visit_softmax_temperature,
-                        num_actors=2)
+                        num_actors=2,
+                        model_name="Go7x7")
 
 
 class Go7x7:
