@@ -58,7 +58,7 @@ class MCTS:
             game.store_search_statistics(root)
             #print(f"move{action} from Player {game.board.player}")
             game.apply(action)
-        print(f"simulated game! Winner is Player {game.utils.evaluate_winner(game.board.board_grid)}")
+        #print(f"simulated game! Winner is Player {game.utils.evaluate_winner(game.board.board_grid)}")
         return game
 
     # Core Monte Carlo Tree Search algorithm.

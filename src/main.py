@@ -8,6 +8,7 @@ from Wrappers import Action
 from Go_7x7 import make_Go7x7_config
 from Go_9x9 import make_Go9x9_config
 from memory_profiler import profile
+from tqdm import tqdm
 
 
 print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))
@@ -23,7 +24,7 @@ def run_selfplay(config: MuZeroConfig,
                  replay_buffer: ReplayBuffer,
                  iteration: int):
     mcts = MCTS()
-    for _ in range(config.batch_size):
+    for _ in tqdm(range(config.batch_size), desc="Selfplay Batch creation", position=1, leave=False):
         network = storage.latest_network()
         game = mcts.play_game(config,network)
         replay_buffer.save_game(game)
@@ -141,7 +142,7 @@ def muzero(config: MuZeroConfig):
     losses = []
     print(f"Starting Selfplay for {config.model_name}! Batch size is {config.batch_size}.")
 
-    for i in range(config.training_episodes):
+    for i in tqdm(range(config.training_episodes), desc=f"Training episodes for {config.model_name}", position=0):
 
         # self-play
         launch_job(run_selfplay, config, storage, replay_buffer, i)
