@@ -52,9 +52,7 @@ class MuZeroConfig(object):
         self.known_bounds = known_bounds
 
         ### Training
-        self.training_steps = int(500e3)
-        self.checkpoint_interval = int(1e3)
-        self.window_size = int(1000)
+        self.window_size = batch_size
         self.batch_size = batch_size
         self.num_unroll_steps = 50
         self.td_steps = td_steps
@@ -68,7 +66,6 @@ class MuZeroConfig(object):
 
         # Exponential learning rate schedule
         self.lr_init = lr_init
-        self.lr_decay_rate = 0.1
         self.lr_decay_steps = lr_decay_steps
 
     def new_game(self):
@@ -76,10 +73,8 @@ class MuZeroConfig(object):
 
 
 class Game(object):
-    """A single episode of interaction with the environment."""
-
     def __init__(self, action_space_size: int, discount: float):
-
+        self.player = 1
         self.environment = self.create_environment()
         self.history = []
         self.rewards = []
@@ -155,11 +150,11 @@ class Game(object):
 
     def to_play(self) -> Player:
 
-        return Player(1)
+        return Player(self.player)
 
     def action_history(self) -> ActionHistory:
 
-        return ActionHistory(self.history, self.action_space_size)
+        return ActionHistory(self.history, self.action_space_size, self.to_play())
 
     def total_rewards(self):
 

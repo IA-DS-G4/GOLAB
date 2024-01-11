@@ -3,17 +3,38 @@ import numpy as np
 import tensorflow as tf
 import keras
 from muzeroconfig import MuZeroConfig
-from mcts import MinMaxStats, SharedStorage, ReplayBuffer, MCTS
+from mcts import SharedStorage, ReplayBuffer, MCTS
 from matplotlib import pyplot as plt
 from nn_models import Network
-from self_play_custom import run_selfplay
 from Wrappers import Action, ActionHistory
 from IPython.display import clear_output
 from Go_7x7 import make_Go7x7_config
+from Go_9x9 import make_Go9x9_config
+import memory_profiler
+from memory_profiler import profile
 
 
 print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))
 print("TensorFlow is using GPU: ", tf.test.is_gpu_available())
+
+# Each self-play job is independent of all others; it takes the latest network
+# snapshot, produces a game and makes it available to the training job by
+# writing it to a shared replay buffer.
+
+@profile
+def run_selfplay(config: MuZeroConfig,
+                 storage: SharedStorage,
+                 replay_buffer: ReplayBuffer):
+    mcts = MCTS()
+    for _ in range(config.batch_size):
+        network = storage.latest_network()
+        game = mcts.play_game(config,network)
+        replay_buffer.save_game(game)
+
+# Each game is produced by starting at the initial board position, then
+# repeatedly executing a Monte Carlo Tree Search to generate moves until the end
+# of the game is reached.
+
 
 
 def scalar_loss(prediction, target) -> float:
@@ -86,9 +107,9 @@ def update_weights(optimizer: tf.keras.optimizers.Optimizer, network: Network, b
     optimizer.apply_gradients(zip(gradients[3], network.value.trainable_variables))
     optimizer.apply_gradients(zip(gradients[4], network.reward.trainable_variables))
 
-    return loss
+    return network, loss
 
-
+@profile
 def train_network(config: MuZeroConfig, storage: SharedStorage, replay_buffer: ReplayBuffer, iterations: int):
     network = storage.latest_network()
     learning_rate = config.lr_init * config.lr_decay_rate ** (iterations / config.lr_decay_steps)
@@ -96,7 +117,7 @@ def train_network(config: MuZeroConfig, storage: SharedStorage, replay_buffer: R
 
 
     batch = replay_buffer.sample_batch(config.num_unroll_steps, config.td_steps, config.action_space_size)
-    loss = update_weights(optimizer, network, batch, config.weight_decay)
+    network, loss = update_weights(optimizer, network, batch, config.weight_decay)
 
     network.tot_training_steps += 1
 
@@ -104,6 +125,9 @@ def train_network(config: MuZeroConfig, storage: SharedStorage, replay_buffer: R
     if iterations % 25 == 0 and iterations >0:
         network.backup_count += 1
         network.save_network_deepcopy()
+
+    storage.save_network(network)
+    tf.keras.backend.clear_session()
 
     return loss
 
@@ -135,7 +159,7 @@ def muzero(config: MuZeroConfig):
         plt.plot(losses)
         plt.show()
 
-
 if __name__ == "__main__":
     muzero(make_Go7x7_config())
+    muzero(make_Go9x9_config())
 

@@ -6,7 +6,6 @@ from typing import List
 from Wrappers import Action, Player, Node
 import tensorflow as tf
 
-
 class Go7x7Config(MuZeroConfig):
 
     def new_game(self):
@@ -35,14 +34,14 @@ def make_Go7x7_config() -> MuZeroConfig:
     return Go7x7Config(action_space_size= 50,
                         observation_space_size= 49,
                         observation_space_shape= (7,7),
-                        max_moves=150,
+                        max_moves=98,
                         discount=0.999,
-                        dirichlet_alpha=0.5,
-                        num_simulations=15,
-                        batch_size=8,
+                        dirichlet_alpha=0.25,
+                        num_simulations=10,
+                        batch_size=16,
                         td_steps=5,
                         lr_init=0.0001,
-                        lr_decay_steps=5000,
+                        lr_decay_steps=50,
                         training_episodes=500,
                         hidden_layer_size= 49,
                         visit_softmax_temperature_fn=visit_softmax_temperature,
@@ -65,13 +64,8 @@ class Go7x7:
         self.root_values = []
         self.discount = 0.999
         self.done = False
-    def reset(self):
-        self.player = 1
-        self.board = GoBoard(board_dimension=self.board_size, player=self.player)
-        self.action_history = []
-        self.rewards = []
-        self.child_visits = []
-        self.root_values = []
+    def clean_memory(self):
+        del self.board
 
     def step(self, action):
         r = int(numpy.floor(action / self.board_size))
@@ -92,7 +86,6 @@ class Go7x7:
         return self.get_observation(), reward, done
 
     def apply(self, action: Action):
-
         observation, reward, done = self.step(action.index)
         self.rewards.append(reward)
         self.action_history.append(action.index)
