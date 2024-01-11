@@ -43,7 +43,7 @@ def make_Go7x7_config() -> MuZeroConfig:
                         td_steps=25,
                         lr_init=0.0001,
                         lr_decay_steps=50,
-                        training_episodes=150,
+                        training_episodes=500,
                         hidden_layer_size= 49,
                         visit_softmax_temperature_fn=visit_softmax_temperature,
                         num_actors=2,
