@@ -62,13 +62,12 @@ class Network(object):
 
         # policy network conv
         self.policy = k.Sequential()
-        self.policy.add(layers.Conv2D(64, (3, 3),activation='relu',kernel_regularizer=regularizer))
-        self.policy.add(layers.Conv2D(64, (2, 2), activation='relu', kernel_regularizer=regularizer))
-        self.policy.add(layers.Conv2D(64, (2, 2), activation='relu', kernel_regularizer=regularizer))
-        self.policy.add(layers.Flatten())
-        self.policy.add(layers.Dense(32, activation="relu", kernel_regularizer=regularizer))
-        self.policy.add(layers.Dense(32, activation="relu", kernel_regularizer=regularizer))
-        self.policy.add(layers.Dense(config.action_space_size, activation='softmax',kernel_regularizer=regularizer))
+        self.policy.add(layers.Dense(config.hidden_layer_size, activation='relu', kernel_regularizer=regularizer))
+        self.policy.add(layers.Dense(512, activation="relu", kernel_regularizer=regularizer))
+        self.policy.add(layers.Dense(512, activation="relu", kernel_regularizer=regularizer))
+        self.policy.add(layers.Dense(256, activation="relu", kernel_regularizer=regularizer))
+        self.policy.add(layers.Dense(128, activation="relu", kernel_regularizer=regularizer))
+        self.policy.add(layers.Dense(config.action_space_size, activation='softmax', kernel_regularizer=regularizer))
 
         #reward net MLP
         self.reward = k.Sequential()
@@ -111,10 +110,21 @@ class Network(object):
 
     def initial_inference(self, image) -> NetworkOutput:
         # representation + prediction function
+        image = tf.expand_dims(image, axis= 3)
+        image = tf.cast(image, dtype=tf.float32)
         hidden_state = self.representation(image)
-        hidden_state = tf.linalg.normalize(hidden_state)
+        hidden_state = tf.expand_dims(image, axis=0)
+        hidden_state = tf.expand_dims(image, axis=3)
+
+        #check if tensor is non-zero, if so only then normalize to avoid nan's
+        zero_check = tf.reduce_all(tf.equal(hidden_state, 0.0))
+        if not zero_check:
+            hidden_state = tf.linalg.normalize(hidden_state)[0]
+
 
         value = self.value(hidden_state)
+
+        hidden_state_for_policy = tf.expand_dims(hidden_state, axis= 3)
         policy = self.policy(hidden_state)
         reward = tf.constant([[0]], dtype=tf.float32)
         policy_p = policy[0]
