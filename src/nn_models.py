@@ -113,18 +113,13 @@ class Network(object):
         image = tf.expand_dims(image, axis= 3)
         image = tf.cast(image, dtype=tf.float32)
         hidden_state = self.representation(image)
-        hidden_state = tf.expand_dims(image, axis=0)
-        hidden_state = tf.expand_dims(image, axis=3)
 
         #check if tensor is non-zero, if so only then normalize to avoid nan's
         zero_check = tf.reduce_all(tf.equal(hidden_state, 0.0))
         if not zero_check:
             hidden_state = tf.linalg.normalize(hidden_state)[0]
 
-
         value = self.value(hidden_state)
-
-        hidden_state_for_policy = tf.expand_dims(hidden_state, axis= 3)
         policy = self.policy(hidden_state)
         reward = tf.constant([[0]], dtype=tf.float32)
         policy_p = policy[0]
