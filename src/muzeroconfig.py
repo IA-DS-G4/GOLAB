@@ -54,7 +54,7 @@ class MuZeroConfig(object):
         ### Training
         self.window_size = batch_size
         self.batch_size = batch_size
-        self.num_unroll_steps = 50
+        self.num_unroll_steps = 3
         self.td_steps = td_steps
 
         self.weight_decay = 1e-4
@@ -67,6 +67,7 @@ class MuZeroConfig(object):
         # Exponential learning rate schedule
         self.lr_init = lr_init
         self.lr_decay_steps = lr_decay_steps
+        self.lr_decay_rate = 0.1
 
     def new_game(self):
         return Game(self.action_space_size, self.discount)
