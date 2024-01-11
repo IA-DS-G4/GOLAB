@@ -36,27 +36,25 @@ class MCTS:
     reach a leaf node.
     """
 
-    def __init__(self, config):
-        self.config = config
+    @staticmethod
+    def play_game(config: MuZeroConfig, network: Network):
+        game = config.new_game()
 
-    def play_game(self, network: Network):
-        game = self.config.new_game()
-
-        while not game.done and len(game.board.game_history) < self.config.max_moves:
+        while not game.done and len(game.board.game_history) < config.max_moves:
             # At the root of the search tree we use the representation function to
             # obtain a hidden state given the current observation.
             root = Node(0)
             current_observation = game.get_observation()
-            self.expand_node(root,
+            MCTS.expand_node(root,
                         game.to_play(),
                         game.legal_actions(),
                         network.initial_inference(current_observation))
-            self.add_exploration_noise(root)
+            MCTS.add_exploration_noise(config, root)
 
             # We then run a Monte Carlo Tree Search using only action sequences and the
             # model learned by the network.
-            self.run_mcts(root, game, network)
-            action = self.select_action(len(game.action_history), root, network)
+            MCTS.run_mcts(config,root, game, network)
+            action = MCTS.select_action(config, len(game.action_history), root, network)
             game.store_search_statistics(root)
             print(f"move{action} from Player {game.board.player}")
             game.apply(action)
@@ -67,22 +65,22 @@ class MCTS:
     # To decide on an action, we run N simulations, always starting at the root of
     # the search tree and traversing the tree according to the UCB formula until we
     # reach a leaf node.
-
-    def run_mcts(self,
+    @staticmethod
+    def run_mcts(config: MuZeroConfig,
                  root: Node,
                  game,
                  network: Network):
 
         min_max_stats = MinMaxStats()
         game_copy = copy.deepcopy(game)
-        for _ in range(self.config.num_simulations):
+        for _ in range(config.num_simulations):
 
             history = game_copy.get_action_history()
             node = root
             search_path = [node]
 
             while node.expanded():
-                action, node = self.select_child(node, min_max_stats)
+                action, node = MCTS.select_child(config, node, min_max_stats)
                 game_copy.apply(action)
                 history.add_action(action)
                 search_path.append(node)
@@ -92,11 +90,11 @@ class MCTS:
             parent = search_path[-2]
             network_output = network.recurrent_inference(parent.hidden_state,
                                                          history.last_action())
-            self.expand_node(node, history.to_play(), game_copy.legal_actions(), network_output)
-            self.backpropagate(search_path,
+            (MCTS.expand_node(node, history.to_play(), game_copy.legal_actions(), network_output))
+            MCTS.backpropagate(search_path,
                           network_output.value,
                           history.to_play(),
-                          self.config.discount,
+                          config.discount,
                           min_max_stats)
             if game_copy.done:
                 break
@@ -111,31 +109,31 @@ class MCTS:
         action_index = np.random.choice(actions, p=policy)
 
         return action_index
-
-    def select_action(self,
+    @staticmethod
+    def select_action(config,
                       num_moves: int,
                       node: Node,
                       network: Network) -> Action:
         visit_counts = [(action,child.visit_count) for action, child in node.children.items()]
-        t = self.config.visit_softmax_temperature_fn(num_moves=num_moves, training_steps=network.training_steps())
-        action = Action(self.softmax_sample(visit_counts, t))
+        t = config.visit_softmax_temperature_fn(num_moves=num_moves, training_steps=network.training_steps())
+        action = Action(MCTS.softmax_sample(visit_counts, t))
         return action
 
     # Select the child with the highest UCB score.
-
-    def select_child(self, node: Node, min_max_stats: MinMaxStats):
+    @staticmethod
+    def select_child(config: MuZeroConfig, node: Node, min_max_stats: MinMaxStats):
         _, action, child = max(
-            (self.ucb_score(node, child, min_max_stats), action, child) for action, child in node.children.items())
+            (MCTS.ucb_score(config, node, child, min_max_stats), action, child) for action, child in node.children.items())
         return action, child
 
     # The score for a node is based on its value, plus an exploration bonus based on the prior.
-
-    def ucb_score(self, parent: Node, child: Node, min_max_stats: MinMaxStats) -> float:
-        pb_c = math.log((parent.visit_count + self.config.pb_c_base + 1) / self.config.pb_c_base) + self.config.pb_c_init
+    @staticmethod
+    def ucb_score(config: MuZeroConfig, parent: Node, child: Node, min_max_stats: MinMaxStats) -> float:
+        pb_c = math.log((parent.visit_count + config.pb_c_base + 1) / config.pb_c_base) + config.pb_c_init
         pb_c *= math.sqrt(parent.visit_count) / (child.visit_count + 1)
         prior_score = pb_c * child.prior
         if child.visit_count > 0:
-            value_score = min_max_stats.normalize(child.reward + self.config.discount * child.value())
+            value_score = min_max_stats.normalize(child.reward + config.discount * child.value())
         else:
             value_score = 0
         return prior_score + value_score
@@ -150,8 +148,6 @@ class MCTS:
         policy_sum = sum(policy.values())
         for action, p in policy.items():
             node.children[action] = Node(p / policy_sum)
-        #for action, p in network_output.policy_logits.items():
-        #    node.children[action] = Node(p)
 
     # At the end of a simulation, we propagate the evaluation all the way up the tree to the root.
     @staticmethod
@@ -166,11 +162,11 @@ class MCTS:
 
     # At the start of each search, we add dirichlet noise to the prior of the root
     # to encourage the search to explore new actions.
-
-    def add_exploration_noise(self, node: Node):
+    @staticmethod
+    def add_exploration_noise(config: MuZeroConfig, node: Node):
         actions = list(node.children.keys())
-        noise = np.random.dirichlet([self.config.root_dirichlet_alpha] * len(actions))
-        frac = self.config.root_exploration_fraction
+        noise = np.random.dirichlet([config.root_dirichlet_alpha] * len(actions))
+        frac = config.root_exploration_fraction
         for a, n in zip(actions, noise):
             node.children[a].prior = node.children[a].prior * (1 - frac) + n * frac
 
@@ -179,6 +175,9 @@ class SharedStorage(object):
 
     def __init__(self, config):
         self.network = Network(config)
+
+    def save_network(self,network):
+        self.network = network
 
     def latest_network(self):
         return self.network
