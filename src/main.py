@@ -8,6 +8,7 @@ from Wrappers import Action
 from Go_7x7 import make_Go7x7_config
 from Go_9x9 import make_Go9x9_config
 from tqdm import tqdm
+import pandas as pd
 
 
 print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))
@@ -155,6 +156,9 @@ def muzero(config: MuZeroConfig):
         plt.xlabel("batches processed")
         plt.show()
         plt.savefig("loss_plot_" + model_name + ".png")
+        df = pd.DataFrame(dict)
+        # saving the dataframe
+        df.to_csv('loss.csv')
 
 if __name__ == "__main__":
     muzero(make_Go7x7_config())
