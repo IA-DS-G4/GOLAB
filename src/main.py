@@ -7,7 +7,6 @@ from nn_models import Network
 from Wrappers import Action
 from Go_7x7 import make_Go7x7_config
 from Go_9x9 import make_Go9x9_config
-from memory_profiler import profile
 from tqdm import tqdm
 
 
@@ -18,7 +17,6 @@ print("TensorFlow is using GPU: ", tf.test.is_gpu_available())
 # snapshot, produces a game and makes it available to the training job by
 # writing it to a shared replay buffer.
 
-@profile
 def run_selfplay(config: MuZeroConfig,
                  storage: SharedStorage,
                  replay_buffer: ReplayBuffer,
@@ -108,7 +106,6 @@ def update_weights(optimizer: tf.keras.optimizers.Optimizer, network: Network, b
 
     return network, loss
 
-@profile
 def train_network(config: MuZeroConfig, storage: SharedStorage, replay_buffer: ReplayBuffer, iterations: int):
     network = storage.latest_network()
     learning_rate = config.lr_init * config.lr_decay_rate ** (iterations / config.lr_decay_steps)
