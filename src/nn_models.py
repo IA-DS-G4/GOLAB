@@ -110,7 +110,7 @@ class Network(object):
         self.value.summary(),
         self.policy.summary(),
         self.reward.summary(),
-        self.dynamics.summary,
+        self.dynamics.summary(),
               )
 
 
