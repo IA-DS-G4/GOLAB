@@ -112,7 +112,7 @@ class Network(object):
     def initial_inference(self, image) -> NetworkOutput:
         # representation + prediction function
         hidden_state = self.representation(image)
-        # hidden_state = tf.keras.utils.normalize(hidden_state)
+        hidden_state = tf.linalg.normalize(hidden_state)
 
         value = self.value(hidden_state)
         policy = self.policy(hidden_state)
