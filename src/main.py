@@ -9,6 +9,7 @@ from nn_models import Network
 from Wrappers import Action, ActionHistory
 from IPython.display import clear_output
 from Go_7x7 import make_Go7x7_config
+from Go_9x9 import make_Go9x9_config
 import memory_profiler
 from memory_profiler import profile
 
@@ -160,4 +161,5 @@ def muzero(config: MuZeroConfig):
 
 if __name__ == "__main__":
     muzero(make_Go7x7_config())
+    muzero(make_Go9x9_config())
 

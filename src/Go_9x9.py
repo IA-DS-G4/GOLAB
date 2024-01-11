@@ -6,7 +6,6 @@ from typing import List
 from Wrappers import Action, Player, Node
 import tensorflow as tf
 
-
 class Go9x9Config(MuZeroConfig):
 
     def new_game(self):
@@ -29,25 +28,24 @@ def make_Go9x9_config() -> MuZeroConfig:
             return 0.250
         elif training_steps < 225:
             return 0.125
-        elif training_steps < 250:
-            return 0.075
         else:
-            return 0.001
+            return 0.125
 
     return Go9x9Config(action_space_size= 82,
                         observation_space_size= 81,
                         observation_space_shape= (9,9),
-                        max_moves=500,
-                        discount=0.997,
+                        max_moves=164,
+                        discount=0.999,
                         dirichlet_alpha=0.25,
-                        num_simulations=150,
-                        batch_size=100,
-                        td_steps=20,
+                        num_simulations=10,
+                        batch_size=16,
+                        td_steps=5,
                         lr_init=0.0001,
-                        lr_decay_steps=5000,
-                        training_episodes=225,
-                        hidden_layer_size= 49,
-                        visit_softmax_temperature_fn=visit_softmax_temperature)
+                        lr_decay_steps=50,
+                        training_episodes=500,
+                        hidden_layer_size= 81,
+                        visit_softmax_temperature_fn=visit_softmax_temperature,
+                        num_actors=2)
 
 
 class Go9x9:
@@ -59,37 +57,40 @@ class Go9x9:
         self.observation_space_shape = (self.board_size,self.board_size)
         self.observation_space_size = self.board_size**2
         self.action_space_size = (self.board_size**2)+1
-        self.action_history_list = []
+        self.action_history = []
         self.rewards = []
+        self.observation_list = []
         self.child_visits = []
         self.root_values = []
-        self.discount = 0.997
-    def reset(self):
-        self.player = 1
-        self.board = GoBoard(board_dimension=self.board_size, player=self.player)
-        return self.get_observation()
+        self.discount = 0.999
+        self.done = False
+    def clean_memory(self):
+        del self.board
 
     def step(self, action):
-        r = numpy.floor(action / self.board_size)
-        c = action % self.board_size
+        r = int(numpy.floor(action / self.board_size))
+        c = int(action % self.board_size)
         move = (r,c)
         if action == self.board_size**2:
             move = (-1,-1)
-        self.utils.make_move(board=self.board,move=move)
+        move_viable, self.board = self.utils.make_move(board=self.board,move=move)
+        if not move_viable:
+            done = True
+            reward = -1
+            return self.get_observation(), reward, done
         done = self.utils.is_game_finished(board=self.board)
-        if done:
+        if done and move_viable:
             reward = 1 if self.utils.evaluate_winner(board_grid=self.board.board_grid)[0] == self.player else -1
-        else:
+        elif not done and move_viable:
             reward = 0
-        self.player *= -1
         return self.get_observation(), reward, done
 
     def apply(self, action: Action):
-
         observation, reward, done = self.step(action.index)
         self.rewards.append(reward)
-        self.action_history_list.append(action)
-
+        self.action_history.append(action.index)
+        self.observation_list.append(observation)
+        self.done = done
 
 
     def get_observation(self):
@@ -105,23 +106,24 @@ class Go9x9:
         return [Action(index) for index in legal]
 
     def total_rewards(self):
-
         return sum(self.rewards)
 
     def is_finished(self):
-        return self.utils.is_game_finished(board=self.board)
+        finished = self.utils.is_game_finished(board=self.board)
+        if finished:
+            print("game is finished!")
+        return finished
 
     def to_play(self):
         return Player(self.board.player)
 
-    def action_history(self) -> ActionHistory:
+    def get_action_history(self) -> ActionHistory:
 
-        return ActionHistory(self.action_history_list, self.action_space_size,self.board.player)
+        return ActionHistory(self.action_history, self.action_space_size,self.board.player)
 
     def store_search_statistics(self, root: Node):
-
         sum_visits = sum(child.visit_count for child in root.children.values())
-        action_space = (Action(index) for index in range(self.action_space_size))
+        action_space = (Action(action) for action in range(self.action_space_size))
         self.child_visits.append([
             root.children[a].visit_count / sum_visits if a in root.children else 0
             for a in action_space
@@ -130,7 +132,6 @@ class Go9x9:
 
     def make_target(self, state_index: int, num_unroll_steps: int, td_steps: int, to_play: Player,
                     action_space_size: int):
-
         # The value target is the discounted root value of the search tree N steps
         # into the future, plus the discounted sum of all rewards until then.
         targets = []
@@ -147,14 +148,13 @@ class Go9x9:
             if current_index > 0 and current_index <= len(self.rewards):
                 last_reward = self.rewards[current_index - 1]
             else:
-                last_reward = None
+                last_reward = 0
 
             if current_index < len(self.root_values):
                 targets.append((value, last_reward, self.child_visits[current_index]))
             else:
                 # States past the end of games are treated as absorbing states.
                 targets.append((0, last_reward, []))
-
         return targets
 
 
