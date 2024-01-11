@@ -37,7 +37,7 @@ def make_Go9x9_config() -> MuZeroConfig:
                         max_moves=164,
                         discount=0.999,
                         dirichlet_alpha=0.25,
-                        num_simulations=10,
+                        num_simulations=3,
                         batch_size=16,
                         td_steps=25,
                         lr_init=0.0001,
