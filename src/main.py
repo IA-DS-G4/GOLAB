@@ -22,7 +22,7 @@ def run_selfplay(config: MuZeroConfig,
                  replay_buffer: ReplayBuffer,
                  iteration: int):
     mcts = MCTS()
-    for _ in tqdm(range(config.batch_size), desc="Selfplay Batch creation", position=1, leave=False):
+    for _ in tqdm(range(config.batch_size), desc="Selfplay Batch creation", position=1, leave=True):
         network = storage.latest_network()
         game = mcts.play_game(config,network)
         replay_buffer.save_game(game)
