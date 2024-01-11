@@ -154,7 +154,7 @@ def muzero(config: MuZeroConfig):
         plt.ylabel("Loss")
         plt.xlabel("batches processed")
         plt.show()
-        plt.savefig("Plots/loss_plot_" + model_name + ".png")
+        plt.savefig("loss_plot_" + model_name + ".png")
 
 if __name__ == "__main__":
     muzero(make_Go7x7_config())
