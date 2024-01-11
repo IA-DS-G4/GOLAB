@@ -1,16 +1,12 @@
 import numpy as np
 from Wrappers import Action
-import typing
-from typing import NamedTuple, Dict, List, Optional
+from typing import NamedTuple, Dict, List
 from tensorflow.python.keras import layers
-from tensorflow.python.keras import models
 import tensorflow as tf
 import tensorflow.python.keras as k
 from keras import __version__
-import copy
 k.__version__ = __version__
 from tensorflow.python.keras.regularizers import L2
-from muzeroconfig import MuZeroConfig
 from Go_7x7 import make_Go7x7_config
 
 

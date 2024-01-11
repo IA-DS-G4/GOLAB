@@ -1,16 +1,12 @@
-import time
-import numpy as np
 import tensorflow as tf
 import keras
 from muzeroconfig import MuZeroConfig
 from mcts import SharedStorage, ReplayBuffer, MCTS
 from matplotlib import pyplot as plt
 from nn_models import Network
-from Wrappers import Action, ActionHistory
-from IPython.display import clear_output
+from Wrappers import Action
 from Go_7x7 import make_Go7x7_config
 from Go_9x9 import make_Go9x9_config
-import memory_profiler
 from memory_profiler import profile
 
 
@@ -143,6 +139,7 @@ def muzero(config: MuZeroConfig):
     storage = SharedStorage(config)
     replay_buffer = ReplayBuffer(config)
     losses = []
+    print(f"Starting Selfplay for {config.model_name}! Batch size is {config.batch_size}.")
 
     for i in range(config.training_episodes):
 

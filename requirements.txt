@@ -1,0 +1,6 @@
+tensorflow~=2.15.0.post1
+keras~=2.15.0
+matplotlib~=3.8.2
+numpy~=1.26.2
+pygame~=2.5.2
+tqdm~=4.66.1

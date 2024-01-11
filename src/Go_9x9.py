@@ -45,7 +45,8 @@ def make_Go9x9_config() -> MuZeroConfig:
                         training_episodes=500,
                         hidden_layer_size= 81,
                         visit_softmax_temperature_fn=visit_softmax_temperature,
-                        num_actors=2)
+                        num_actors=2,
+                        model_name="Go9x9")
 
 
 class Go9x9:
