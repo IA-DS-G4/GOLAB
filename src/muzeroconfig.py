@@ -22,7 +22,7 @@ class MuZeroConfig(object):
                  num_actors: int,
                  lr_init: float,
                  lr_decay_steps: float,
-                 dropout_rate: int,
+                 dropout_rate: float,
                  training_episodes: int,
                  hidden_layer_size: int,
                  model_name: str,
