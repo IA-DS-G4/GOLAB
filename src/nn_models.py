@@ -41,6 +41,7 @@ class Network(object):
         self.observation_space_shape = (1,) + config.observation_space_shape + (1,)
         regularizer = L2(config.weight_decay)
 
+
         #state encoder conv network
         self.representation = k.Sequential()
         self.representation.add(layers.Conv2D(64, (3, 3),activation='relu',kernel_regularizer=regularizer))
@@ -48,14 +49,18 @@ class Network(object):
         self.representation.add(layers.Conv2D(64, (2, 2), activation='relu', kernel_regularizer=regularizer))
         self.representation.add(layers.Flatten())
         self.representation.add(layers.Dense(64, activation="relu", kernel_regularizer=regularizer))
+        self.representation.add(layers.Dropout(config.dropout_rate))
         self.representation.add(layers.Dense(64, activation="relu", kernel_regularizer=regularizer))
+        self.representation.add(layers.Dropout(config.dropout_rate))
         self.representation.add(layers.Dense(config.hidden_layer_size, kernel_regularizer=regularizer))
 
         #value network MLP
         self.value = k.Sequential()
         self.value.add(layers.Dense(config.hidden_layer_size, activation='relu', kernel_regularizer=regularizer))
         self.value.add(layers.Dense(512, activation="relu", kernel_regularizer=regularizer))
+        self.value.add(layers.Dropout(config.dropout_rate))
         self.value.add(layers.Dense(512, activation="relu", kernel_regularizer=regularizer))
+        self.value.add(layers.Dropout(config.dropout_rate))
         self.value.add(layers.Dense(256, activation="relu", kernel_regularizer=regularizer))
         self.value.add(layers.Dense(128, activation="relu", kernel_regularizer=regularizer))
         self.value.add(layers.Dense(1,activation='relu', kernel_regularizer=regularizer))
@@ -64,7 +69,9 @@ class Network(object):
         self.policy = k.Sequential()
         self.policy.add(layers.Dense(config.hidden_layer_size, activation='relu', kernel_regularizer=regularizer))
         self.policy.add(layers.Dense(512, activation="relu", kernel_regularizer=regularizer))
+        self.policy.add(layers.Dropout(config.dropout_rate))
         self.policy.add(layers.Dense(512, activation="relu", kernel_regularizer=regularizer))
+        self.policy.add(layers.Dropout(config.dropout_rate))
         self.policy.add(layers.Dense(256, activation="relu", kernel_regularizer=regularizer))
         self.policy.add(layers.Dense(128, activation="relu", kernel_regularizer=regularizer))
         self.policy.add(layers.Dense(config.action_space_size, activation='softmax', kernel_regularizer=regularizer))
@@ -73,7 +80,9 @@ class Network(object):
         self.reward = k.Sequential()
         self.reward.add(layers.Dense(config.hidden_layer_size, activation='relu', kernel_regularizer=regularizer))
         self.reward.add(layers.Dense(512, activation="relu", kernel_regularizer=regularizer))
+        self.reward.add(layers.Dropout(config.dropout_rate))
         self.reward.add(layers.Dense(512, activation="relu", kernel_regularizer=regularizer))
+        self.reward.add(layers.Dropout(config.dropout_rate))
         self.reward.add(layers.Dense(256, activation="relu", kernel_regularizer=regularizer))
         self.reward.add(layers.Dense(128, activation="relu", kernel_regularizer=regularizer))
         self.reward.add(layers.Dense(1,activation='relu', kernel_regularizer=regularizer))
@@ -82,7 +91,9 @@ class Network(object):
         self.dynamics = k.Sequential()
         self.dynamics.add(layers.Dense(config.hidden_layer_size, activation='relu', kernel_regularizer=regularizer))
         self.dynamics.add(layers.Dense(512, activation="relu", kernel_regularizer=regularizer))
+        self.dynamics.add(layers.Dropout(0.2))
         self.dynamics.add(layers.Dense(1024, activation="relu", kernel_regularizer=regularizer))
+        self.dynamics.add(layers.Dropout(0.2))
         self.dynamics.add(layers.Dense(512, activation="relu", kernel_regularizer=regularizer))
         self.dynamics.add(layers.Dense(config.hidden_layer_size, kernel_regularizer=regularizer))
 

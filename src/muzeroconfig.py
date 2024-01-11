@@ -22,6 +22,7 @@ class MuZeroConfig(object):
                  num_actors: int,
                  lr_init: float,
                  lr_decay_steps: float,
+                 dropout_rate: int,
                  training_episodes: int,
                  hidden_layer_size: int,
                  model_name: str,
@@ -64,6 +65,7 @@ class MuZeroConfig(object):
 
         self.training_episodes = training_episodes
         self.hidden_layer_size = hidden_layer_size
+        self.dropout_rate = dropout_rate
 
         # Exponential learning rate schedule
         self.lr_init = lr_init

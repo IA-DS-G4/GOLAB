@@ -36,6 +36,7 @@ def make_Go7x7_config() -> MuZeroConfig:
                         observation_space_shape= (7,7),
                         max_moves=98,
                         discount=0.999,
+                        dropout_rate = 0.1,
                         dirichlet_alpha=0.25,
                         num_simulations=3,
                         batch_size=16,
