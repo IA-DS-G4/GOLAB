@@ -9,6 +9,9 @@ import tensorflow.python.keras as k
 from keras import __version__
 import copy
 k.__version__ = __version__
+from tensorflow.python.keras.regularizers import L2
+from muzeroconfig import MuZeroConfig
+from Go_7x7 import make_Go7x7_config
 
 
 '''
@@ -34,35 +37,77 @@ class NetworkOutput(NamedTuple):
 class Network(object):
 
     def __init__(self, config):
-        # regularizer = L2(config.weight_decay)
-        self.observation_space_shape = config.observation_space_shape
         self.hidden_layer_size = config.hidden_layer_size
+        self.observation_space_shape = (1,) + config.observation_space_shape + (1,)
+        regularizer = L2(config.weight_decay)
 
+        #state encoder conv network
         self.representation = k.Sequential()
-        self.representation.add(layers.Flatten(input_shape=self.observation_space_shape))
-        self.representation.add(layers.Dense(config.hidden_layer_size, activation='relu'))
-        self.representation.add(layers.Dense(config.hidden_layer_size, activation='relu'))
+        self.representation.add(layers.Conv2D(64, (3, 3),activation='relu',kernel_regularizer=regularizer))
+        self.representation.add(layers.Conv2D(64, (2, 2), activation='relu', kernel_regularizer=regularizer))
+        self.representation.add(layers.Conv2D(64, (2, 2), activation='relu', kernel_regularizer=regularizer))
+        self.representation.add(layers.Flatten())
+        self.representation.add(layers.Dense(64, activation="relu", kernel_regularizer=regularizer))
+        self.representation.add(layers.Dense(64, activation="relu", kernel_regularizer=regularizer))
+        self.representation.add(layers.Dense(config.hidden_layer_size, kernel_regularizer=regularizer))
 
+        #value network MLP
         self.value = k.Sequential()
-        self.value.add(layers.Dense(config.hidden_layer_size, activation='relu'))
-        self.value.add(layers.Dense(1, activation=None))  # No activation for value output
+        self.value.add(layers.Dense(config.hidden_layer_size, activation='relu', kernel_regularizer=regularizer))
+        self.value.add(layers.Dense(512, activation="relu", kernel_regularizer=regularizer))
+        self.value.add(layers.Dense(512, activation="relu", kernel_regularizer=regularizer))
+        self.value.add(layers.Dense(256, activation="relu", kernel_regularizer=regularizer))
+        self.value.add(layers.Dense(128, activation="relu", kernel_regularizer=regularizer))
+        self.value.add(layers.Dense(1,activation='relu', kernel_regularizer=regularizer))
 
+        # policy network conv
         self.policy = k.Sequential()
-        self.policy.add(layers.Dense(config.hidden_layer_size, activation='relu'))
-        self.policy.add(layers.Dense(config.action_space_size, activation=None))  # No activation for policy output
+        self.policy.add(layers.Conv2D(64, (3, 3),activation='relu',kernel_regularizer=regularizer))
+        self.policy.add(layers.Conv2D(64, (2, 2), activation='relu', kernel_regularizer=regularizer))
+        self.policy.add(layers.Conv2D(64, (2, 2), activation='relu', kernel_regularizer=regularizer))
+        self.policy.add(layers.Flatten())
+        self.policy.add(layers.Dense(32, activation="relu", kernel_regularizer=regularizer))
+        self.policy.add(layers.Dense(32, activation="relu", kernel_regularizer=regularizer))
+        self.policy.add(layers.Dense(config.action_space_size, activation='softmax',kernel_regularizer=regularizer))
 
+        #reward net MLP
         self.reward = k.Sequential()
-        self.reward.add(layers.Dense(config.hidden_layer_size, activation='relu'))
-        self.reward.add(layers.Dense(1, activation=None))  # No activation for reward output
+        self.reward.add(layers.Dense(config.hidden_layer_size, activation='relu', kernel_regularizer=regularizer))
+        self.reward.add(layers.Dense(512, activation="relu", kernel_regularizer=regularizer))
+        self.reward.add(layers.Dense(512, activation="relu", kernel_regularizer=regularizer))
+        self.reward.add(layers.Dense(256, activation="relu", kernel_regularizer=regularizer))
+        self.reward.add(layers.Dense(128, activation="relu", kernel_regularizer=regularizer))
+        self.reward.add(layers.Dense(1,activation='relu', kernel_regularizer=regularizer))
+
 
         self.dynamics = k.Sequential()
-        self.dynamics.add(layers.Dense(config.hidden_layer_size, activation='relu'))
-        self.dynamics.add(layers.Dense(config.hidden_layer_size, activation='relu'))
+        self.dynamics.add(layers.Dense(config.hidden_layer_size, activation='relu', kernel_regularizer=regularizer))
+        self.dynamics.add(layers.Dense(512, activation="relu", kernel_regularizer=regularizer))
+        self.dynamics.add(layers.Dense(1024, activation="relu", kernel_regularizer=regularizer))
+        self.dynamics.add(layers.Dense(512, activation="relu", kernel_regularizer=regularizer))
+        self.dynamics.add(layers.Dense(config.hidden_layer_size, kernel_regularizer=regularizer))
+
 
         self.tot_training_steps = 0
         self.backup_count = 0
 
         self.action_space_size = config.action_space_size
+
+    def summarise(self):
+        self.representation.build(self.observation_space_shape)
+        self.value.build((0,100))
+        self.policy.build(self.observation_space_shape)
+        self.reward.build((0,100))
+        self.dynamics.build((0,100))
+
+        print(self.representation.summary(),
+        self.value.summary(),
+        self.policy.summary(),
+        self.reward.summary(),
+        self.dynamics.summary,
+              )
+
+
 
     def initial_inference(self, image) -> NetworkOutput:
         # representation + prediction function
@@ -101,32 +146,6 @@ class Network(object):
                              policy,
                              next_hidden_state)
 
-
-    def save_network(self, model_name):
-
-        hidden_layer_size = (self.hidden_layer_size, self.hidden_layer_size)
-        reward_dynamics_input = (1, 100)
-
-        representation_network = self.representation
-        representation_network.build(input_shape=(self.observation_space_shape))
-        representation_network.save(f"../Saved models/{model_name}/representation_network")
-
-        value_network = self.value
-        value_network.build(input_shape=(hidden_layer_size))
-        value_network.save(f"../Saved models/{model_name}/value_network")
-
-        dynamics_network = self.dynamics
-        dynamics_network.build(input_shape=(reward_dynamics_input))
-        dynamics_network.save(f"../Saved models/{model_name}/dynamics_network")
-
-        policy_network = self.policy
-        policy_network.build(input_shape=(hidden_layer_size))
-        policy_network.save(f"../Saved models/{model_name}/policy_network")
-
-        reward_network = self.reward
-        reward_network.build(input_shape=(reward_dynamics_input))
-        reward_network.save(f"../Saved models/{model_name}/reward_network")
-
     def get_weights(self):
         # Returns the weights of this network.
 
@@ -150,3 +169,8 @@ class Network(object):
         self.dynamics.save(f"../Saved models/backup{self.backup_count}/dynamics_network")
         self.policy.save(f"../Saved models/backup{self.backup_count}/policy_network")
         self.reward.save(f"../Saved models/backup{self.backup_count}/reward_network")
+
+
+if __name__ == "__main__":
+    network =Network(make_Go7x7_config())
+    network.summarise()
