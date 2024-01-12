@@ -151,6 +151,7 @@ def muzero_train(config: MuZeroConfig):
         # saving the dataframe
         df.to_csv(f'loss_{model_name}.csv')
 
+
 if __name__ == "__main__":
     # uncomment depending on which model you want to train
     muzero_train(make_Go7x7_config())
