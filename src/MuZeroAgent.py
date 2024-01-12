@@ -39,19 +39,18 @@ PLAYER_WHITE = -1
 PASS = (-1, -1)
 
 class MuZeroAgent:
-    def __init__(self, model_path: str, game, config: MuZeroConfig, backup_count_to_load=1):
-        self.model_path = model_path
+    def __init__(self, config: MuZeroConfig, backup_count_to_load=1):
+        self.model_path = config.model_name
         self.config = config
-        self.game = game
+        self.game = self.config.new_game()
 
         # Assuming you have an instance of Network
         self.network = Network(config=self.config)
 
         # Load the weights for a specific model and backup
-        model_name_to_load = game.__name__
         self.backup_count_to_load = backup_count_to_load
 
-        self.network.load_network_deepcopy(model_name=model_name_to_load, backup_count=self.backup_count_to_load)
+        self.network.load_network_deepcopy(model_name=self.model_path, backup_count=self.backup_count_to_load)
 
         # Now, the `network` instance has its weights loaded from the specified backup.
 
@@ -83,6 +82,7 @@ class MuZeroAgent:
                 # Wait for server response
                 response = client_socket.recv(1024).decode()
                 print(f"Server Response1: {response}")
+                self.receive_move(response)
                 if "END" in response: break
 
             first = False
@@ -95,8 +95,7 @@ class MuZeroAgent:
 
         client_socket.close()
 
-    def receive_move(self):
-        move = (1,2)
+    def receive_move(self,move):
         action = Action(move[0]*self.game.board_size + move[1])
         self.game.apply(action)
 
@@ -121,10 +120,13 @@ class MuZeroAgent:
         r = int(np.floor(action.index / self.game.board_size))
         c = int(action.index % self.game.board_size)
         move = (r, c)
-        if action == self.game.board_size ** 2:
+        if action.index == self.game.board_size ** 2:
             move = (-1, -1)
-        return f"MOVE {move[0]},{move[1]}"
+        return move, f"MOVE {move[0]},{move[1]}"
+    def play(self):
+        self.connect_to_server()
 
 
 if __name__ == "__main__":
-    agent = MuZeroAgent(config=make_Go9x9_config(), game=Go9x9, model_path="Go9x9")
+    agent = MuZeroAgent(config=make_Go9x9_config())
+    agent.play()

@@ -3,7 +3,9 @@ from pygame.locals import *
 from go_board import GoBoard
 from go_utils import GoUtils
 from go_graphics import RenderGo
-
+from MuZeroAgent import MuZeroAgent
+from Go_9x9 import Go9x9Config,make_Go9x9_config
+import numpy as np
 # Constants
 BOARD_SIZE = 9
 WIDTH = 90
@@ -25,15 +27,14 @@ colors = {
 # Players
 PLAYER_BLACK = 1
 PLAYER_WHITE = -1
-PASS = (-1, -1)
 
 class GoGame:
-    def __init__(self):
-        self.board = GoBoard(board_dimension=BOARD_SIZE, player=PLAYER_BLACK)
+    def __init__(self, config):
+        self.board = GoBoard(board_dimension=BOARD_SIZE, player=1)
         pygame.init()
         pygame.font.init()
         self.display_surface = pygame.display.set_mode((GAME_WIDTH, GAME_HEIGHT), pygame.HWSURFACE | pygame.DOUBLEBUF)
-        pygame.display.set_caption('Go')
+        pygame.display.set_caption(f'{config.model_name}')
         self.renderer = RenderGo(self)
         self.utils = GoUtils()
         self.pass_button_clicked = False
@@ -43,7 +44,7 @@ class GoGame:
         self.playing = False
         self.win = False
         self.last_position = [-1, -1]
-        self.agent = MuZero(model_path="../models", restored=True)
+        self.agent = MuZeroAgent(config=config)
 
     def handle_event(self, event):
         if event.type == pygame.QUIT:
@@ -57,24 +58,21 @@ class GoGame:
             if self.mouse_in_button(pos):
                 if not self.playing:
                     self.start()
-                    # Machine plays first move
-                    self.machine_responds()
-                    self.lastPosition = self.go_board.get_last_position()
-                    self.print_winner()
+                    # MuZero plays first move
+                    self.muzero_respond()
                 else:
                     self.surrender()
-                    self.go_board.flip_player()
+                    self.board.flip_player()
             elif self.mouse_in_pass_button(pos) and self.playing:
                 self.pass_button_clicked = False
-                _, self.go_board = self.utils.make_move(board=self.go_board, move=PASS)
+                _, self.board = self.utils.make_move(board=self.board, move=(-1,-1))
                 if not self.passed_once:
                     self.passed_once = True
                     self.renderer.render_all()
 
-                    # Machine plays
-                    self.machine_responds()
-                    self.lastPosition = self.go_board.get_last_position()
-                    self.print_winner()
+                    # MuZero plays
+                    self.muzero_respond()
+                    self.lastPosition = self.board.get_last_position()
 
                 else:
                     # Double Pass Game Over
@@ -87,17 +85,18 @@ class GoGame:
                 r = (pos[1] - PADDING + WIDTH // 2) // (WIDTH + MARGIN)
 
                 if 0 <= r < BOARD_SIZE and 0 <= c < BOARD_SIZE:
-                    is_valid, self.go_board = self.utils.make_move(board=self.go_board, move=(r, c))
+                    is_valid, self.board = self.utils.make_move(board=self.board, move=(r, c))
                     if is_valid:
                         self.passed_once = False
                         self.print_winner()
-                        self.lastPosition = self.go_board.get_last_position()
+                        self.lastPosition = self.board.get_last_position()
                         self.renderer.render_all()
 
                         # Machine plays
-                        self.machine_responds()
+                        self.agent.receive_move((r,c))
+                        self.muzero_respond()
                         self.print_winner()
-                        self.lastPosition = self.go_board.get_last_position()
+                        self.lastPosition = self.board.get_last_position()
                     else:
                         print("Invalid move!")
 
@@ -145,7 +144,7 @@ class GoGame:
 
     def handle_pass_button_click(self):
         self.pass_button_clicked = False
-        _, self.board = self.utils.make_move(board=self.board, move=PASS)
+        _, self.board = self.utils.make_move(board=self.board, move=(-1,-1))
         if not self.passed_once:
             self.passed_once = True
         else:
@@ -165,30 +164,17 @@ class GoGame:
 
     def print_winner(self):
         winner, winning_by_points = self.utils.evaluate_winner(self.board.board_grid)
-        player = "Black" if winner == PLAYER_BLACK else "White"
-        print(f"{player} wins by {winning_by_points}")
+        print(f"Player {winner} wins by {winning_by_points} points!")
 
     def retrieve_winner(self):
         return self.utils.evaluate_winner(self.board.board_grid)
 
-    def machine_responds(self):
+    def muzero_respond(self):
         print("machine responds")
-        print("for board.", self.go_board)
-        _, win_prob = self.agent.play_with_raw_nn(self.go_board)
-        machine_mv = self.agent.play_with_mcts(self.go_board, simulation_number=1000)
-        print(machine_mv, win_prob)
-        if machine_mv == (-1, -1):  # Machine passes
-            if self.passed_once == True:
-                print("Game Over!")
-                self.game_over = True
-            else:
-                _, self.go_board = self.utils.make_move(board=self.go_board, move=machine_mv)
-                print("machine passes")
-        else:
-            self.passed_once = False
-            _, self.go_board = self.utils.make_move(board=self.go_board, move=machine_mv)
-            print("Machine thinks the winning probability is:", win_prob)
+        move,sting_move = self.agent.generate_move()
+        valid, self.board = self.utils.make_move(board=self.board, move=move)
+
 
 if __name__ == "__main__":
-    go_game = GoGame()
+    go_game = GoGame(config=make_Go9x9_config())
     go_game.on_execute()

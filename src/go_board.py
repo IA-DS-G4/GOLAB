@@ -3,19 +3,11 @@ import numpy as np
 
 
 class GoBoard():
-    def __init__(self, board_dimension, player, board_grid=[], game_history=None):
-        """Initialize the game board
-        Arg
-            board_dimension: the dimension of our game board
-            player: 1 (player who plays first) or -1 indicating the two players
-            board_grid: the original grid of the board, 2d array of 1 - black,
-                -1: white and 0: not occupied
-            game_history: the original order in which player played the game, a list of move tuples
-                (player, r, c) such as (-1, 4, 6), or (1, -1, -1) means black passes a move
-        """
+    def __init__(self, board_dimension, player, board_grid=[], game_history=[]):
+        # Create a board with dimension board_dimension x board_dimension, player is the current player starting the game
         self.board_dimension = board_dimension
         self.player = player
-        if len(board_grid) > 0:
+        if len(game_history) > 0:
             self.board_grid = board_grid
             self.game_history = game_history
         else:
@@ -25,22 +17,6 @@ class GoBoard():
     def flip_player(self):
         #Update the player to the other player
         self.player *= -1
-
-    def generate_augmented_boards(self):
-        #augment the training data using the flipped version and rotated version of the board itself
-        for i in range(4):
-            # rotate counterclockwise
-            new_board_grid = np.rot90(self.board_grid, i + 1)
-            yield GoBoard(self.board_dimension, self.player, board_grid=new_board_grid, game_history=None)
-
-        # flip horizontally
-        new_board_grid = np.fliplr(self.board_grid)
-        yield GoBoard(self.board_dimension, self.player, board_grid=new_board_grid, game_history=None)
-
-    def reverse_board_config(self):
-        #Switch white and black stones and flip current player.
-        #This is used for data augmentation.
-        return GoBoard(self.board_dimension, -self.player, board_grid=-self.board_grid, game_history=None)
 
     def add_move_to_history(self, r, c):
         #Add move (r, c) to the game_history field of the class
@@ -58,7 +34,7 @@ class GoBoard():
         return GoBoard(self.board_dimension, self.player, copy_board_grid, copy_game_history)
 
     def __eq__(self, other):
-        """Override the default Equals behavior"""
+      # Equality test to compare boards, games
         if isinstance(other, self.__class__) or issubclass(other.__class__, self.__class__) or issubclass(
                 self.__class__, other.__class__):
             return self.board_dimension == other.board_dimension \

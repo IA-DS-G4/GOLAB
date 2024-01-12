@@ -157,13 +157,13 @@ class GoUtils():
 
             #Iterate all the adjacent positions with the same color as current_pos and add to frontier
             #if we never visited it or have already added in the frontier
-            for neighbor in GoUtils._find_adjacent_positions_with_same_color(current_pos, board_grid):
+            for neighbor in GoUtils._find_positions_same_color(current_pos, board_grid):
                 if neighbor not in queue and neighbor not in group_members:
                     queue.append(neighbor)
         return group_members
 
     @staticmethod
-    def _find_adjacent_positions_with_same_color(position, board_grid, current_player=None):
+    def _find_positions_same_color(position, board_grid, current_player=None):
         neighbors = set()
         (r, c) = position
         if current_player != None:
@@ -187,7 +187,7 @@ class GoUtils():
         return neighbors
 
     @staticmethod
-    def _find_adjacent_positions_with_opposite_color(position, board_grid):
+    def _find_positions_opposite_color(position, board_grid):
         neighbors = set()
         (r, c) = position
         player = board_grid[r][c]
@@ -238,7 +238,7 @@ class GoUtils():
 
     @staticmethod
     def _check_ko_rule(board, move):
-        if GoUtils._find_adjacent_positions_with_same_color(move, board.board_grid, board.player) == set() and GoUtils._count_liberty(board.board_grid, move) == 0:
+        if GoUtils._find_positions_same_color(move, board.board_grid, board.player) == set() and GoUtils._count_liberty(board.board_grid, move) == 0:
             #Condition one passes
             board_copy = board.copy()
             (r, c) = move
@@ -247,7 +247,7 @@ class GoUtils():
             dead_neighbor_num = 0
             neighbor_opponent_dead_due_to_move = None
 
-            for neighbor_opponent in GoUtils._find_adjacent_positions_with_opposite_color(move, board_copy.board_grid):
+            for neighbor_opponent in GoUtils._find_positions_opposite_color(move, board_copy.board_grid):
                 if GoUtils._count_liberty(board_copy.board_grid, neighbor_opponent) == 0:
                     dead_neighbor_num += 1
                     neighbor_opponent_dead_due_to_move = neighbor_opponent
@@ -289,7 +289,7 @@ class GoUtils():
                 if board_grid[i][j] == 0:
                     visited[(i, j)] = False
 
-        current_position = GoUtils._get_next_empty_space_to_visit(visited)
+        current_position = GoUtils._get_next_visit(visited)
         #Outer loop makes sure that all 
         while current_position != None:
             
@@ -301,7 +301,7 @@ class GoUtils():
                 visited[current_position] = True
 
                 #Go to its neighbors, if it's a stone, update border_stone_nums, otherwise add to frontier
-                for neighbor in GoUtils._find_direct_neighbors(current_position, board_grid):
+                for neighbor in GoUtils._direct_neighbors(current_position, board_grid):
                     (neighbor_r, neighbor_c) = neighbor
                     if board_grid[neighbor_r][neighbor_c] == 0:
                         if visited[neighbor] == False and neighbor not in frontier:
@@ -319,12 +319,12 @@ class GoUtils():
             current_group = []
             border_stone_nums[BLACK] = 0
             border_stone_nums[WHITE] = 0
-            current_position = GoUtils._get_next_empty_space_to_visit(visited)
+            current_position = GoUtils._get_next_visit(visited)
 
         return connected_empty_pieces_and_player
 
     @staticmethod
-    def _get_next_empty_space_to_visit(visited):
+    def _get_next_visit(visited):
         for position in visited:
             if not visited[position]:
                 return position
@@ -344,7 +344,7 @@ class GoUtils():
         return count
 
     @staticmethod
-    def _find_direct_neighbors(position, board_grid):
+    def _direct_neighbors(position, board_grid):
         neighbors = set()
         (r, c) = position
         player = board_grid[r][c]
