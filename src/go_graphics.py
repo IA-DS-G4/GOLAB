@@ -10,7 +10,7 @@ colors = {
 
 PLAYER_BLACK = 1
 PLAYER_WHITE = -1
-PASS = (-1, -1)
+
 
 # Grid Globals
 WIDTH = 90

@@ -1,9 +1,3 @@
-import pygame
-from pygame.locals import *
-from go_board import GoBoard
-from go_utils import GoUtils
-from go_graphics import RenderGo
-import tensorflow as tf
 from nn_models import Network
 from muzeroconfig import MuZeroConfig
 import socket
@@ -14,29 +8,6 @@ from Wrappers import Action, Player, Node
 import numpy as np
 from Go_7x7 import Go7x7, make_Go7x7_config
 from Go_9x9 import Go9x9, make_Go9x9_config
-
-# Constants
-BOARD_SIZE = 9
-WIDTH = 90
-MARGIN = 2
-PADDING = 50
-DOT = 4
-BOARD = (WIDTH + MARGIN) * (BOARD_SIZE - 1) + MARGIN # Actual width for the board
-GAME_WIDTH = (WIDTH + MARGIN) * (BOARD_SIZE - 1) + MARGIN + PADDING * 2
-GAME_HEIGHT = GAME_WIDTH + 50
-
-colors = {
-    "b": (0, 0, 0),
-    "w": (245, 245, 245),
-    "r": (133, 42, 44),
-    "y": (255, 204, 153),
-    "g": (26, 81, 79)
-}
-
-# Players
-PLAYER_BLACK = 1
-PLAYER_WHITE = -1
-PASS = (-1, -1)
 
 class MuZeroAgent:
     def __init__(self, config: MuZeroConfig, backup_count_to_load=1):
@@ -74,31 +45,33 @@ class MuZeroAgent:
             # Generate and send a random move
 
             if ag == 1 or not first:
-                move = self.generate_random_move()
+                move, move_str = self.generate_move()
                 time.sleep(1)
-                client_socket.send(move.encode())
-                print("Send:", move)
+                client_socket.send(move_str.encode())
+                print("Send:", move_str)
 
                 # Wait for server response
                 response = client_socket.recv(1024).decode()
+                move = self.decode_move_string(response)
                 print(f"Server Response1: {response}")
-                self.receive_move(response)
-                if "END" in response: break
-
-            first = False
-            response = client_socket.recv(1024).decode()
-            print(f"Server Response2: {response}")
-            if "END" in response: break
-
-            # Add some condition to break the loop, if necessary
-            # Example: If server sends a certain message, or after a number of moves
+                self.act_other_agent_move(move)
+                if "END" in response or self.game.is_finished(): break
+            if ag == 2:
+                response = client_socket.recv(1024).decode()
+                move = self.decode_move_string(response)
+                print(f"Server Response1: {response}")
+                if "END" in response or self.game.is_finished(): break
+                self.act_other_agent_move(move)
+                move, move_str = self.generate_move()
+                time.sleep(1)
+                client_socket.send(move_str.encode())
+                print("Send:", move_str)
 
         client_socket.close()
 
-    def receive_move(self,move):
+    def act_other_agent_move(self,move):
         action = Action(move[0]*self.game.board_size + move[1])
         self.game.apply(action)
-
 
     def generate_random_move(self):
         x = random.randint(0, 9)
@@ -123,10 +96,13 @@ class MuZeroAgent:
         if action.index == self.game.board_size ** 2:
             move = (-1, -1)
         return move, f"MOVE {move[0]},{move[1]}"
-    def play(self):
-        self.connect_to_server()
+    @staticmethod
+    def decode_move_string(move_string):
+        # Assuming move_string is in the format "MOVE x,y"
+        _, coordinates = move_string.split(" ")
+        x, y = map(int, coordinates.split(","))
+        return x, y
 
 
 if __name__ == "__main__":
     agent = MuZeroAgent(config=make_Go9x9_config())
-    agent.play()
