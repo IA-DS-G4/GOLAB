@@ -182,6 +182,14 @@ class Network(object):
         self.policy.save(f"../Saved models/{model_name}/backup{self.backup_count}/policy_network")
         self.reward.save(f"../Saved models/{model_name}/backup{self.backup_count}/reward_network")
 
+    def load_network_deepcopy(self, model_name, backup_count):
+        self.representation = k.models.load_model(
+            f"../Saved models/{model_name}/backup{backup_count}/representation_network")
+        self.value = k.models.load_model(f"../Saved models/{model_name}/backup{backup_count}/value_network")
+        self.dynamics = k.models.load_model(f"../Saved models/{model_name}/backup{backup_count}/dynamics_network")
+        self.policy = k.models.load_model(f"../Saved models/{model_name}/backup{backup_count}/policy_network")
+        self.reward = k.models.load_model(f"../Saved models/{model_name}/backup{backup_count}/reward_network")
+
 
 if __name__ == "__main__":
     network =Network(make_Go7x7_config())

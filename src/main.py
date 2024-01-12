@@ -36,7 +36,7 @@ def run_selfplay(config: MuZeroConfig,
 
 
 def scalar_loss(prediction, target) -> float:
-    # MSE in board games, cross entropy between categorical values in Atari.
+    # MSE in board games.
     return tf.losses.mean_squared_error(target, prediction)
 
 
@@ -110,7 +110,7 @@ def update_weights(optimizer: tf.keras.optimizers.Optimizer, network: Network, b
 def train_network(config: MuZeroConfig, storage: SharedStorage, replay_buffer: ReplayBuffer, iterations: int):
     network = storage.latest_network()
     learning_rate = config.lr_init * config.lr_decay_rate ** (iterations / config.lr_decay_steps)
-    optimizer = keras.optimizers.legacy.Adam()
+    optimizer = keras.optimizers.legacy.Adam(learning_rate=learning_rate)
 
 
     batch = replay_buffer.sample_batch(config.num_unroll_steps, config.td_steps, config.action_space_size)
@@ -128,9 +128,6 @@ def train_network(config: MuZeroConfig, storage: SharedStorage, replay_buffer: R
 
     return loss
 
-def launch_job(f, *args):
-    f(*args)
-
 
 def muzero(config: MuZeroConfig):
 
@@ -143,7 +140,7 @@ def muzero(config: MuZeroConfig):
     for i in tqdm(range(config.training_episodes), desc=f"Training episodes for {config.model_name}", position=0):
 
         # self-play
-        launch_job(run_selfplay, config, storage, replay_buffer, i)
+        run_selfplay(config, storage, replay_buffer, i)
 
         # training
         loss = train_network(config, storage, replay_buffer, i)
@@ -156,9 +153,9 @@ def muzero(config: MuZeroConfig):
         plt.xlabel("batches processed")
         plt.show()
         plt.savefig("loss_plot_" + model_name + ".png")
-        df = pd.DataFrame(dict)
+        df = pd.DataFrame(losses, columns=['loss'])
         # saving the dataframe
-        df.to_csv('loss.csv')
+        df.to_csv(f'loss_{model_name}.csv')
 
 if __name__ == "__main__":
     muzero(make_Go7x7_config())
