@@ -2,7 +2,7 @@ import copy
 import numpy as np
 
 
-class GoBoard():
+class GoBoard:
     def __init__(self, board_dimension, player, board_grid=[], game_history=[]):
         # Create a board with dimension board_dimension x board_dimension, player is the current player starting the game
         self.board_dimension = board_dimension

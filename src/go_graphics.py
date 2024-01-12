@@ -1,7 +1,5 @@
 import pygame
 
-BOARD_SIZE = 9
-
 # Colors
 colors = {
     "b": (0, 0, 0),
@@ -19,37 +17,37 @@ WIDTH = 90
 MARGIN = 2
 PADDING = 50
 DOT = 4
-BOARD = (WIDTH + MARGIN) * (BOARD_SIZE - 1) + MARGIN # Actual width for the board
-BOARD_WIDTH = (WIDTH + MARGIN) * (BOARD_SIZE - 1) + MARGIN
-GAME_WIDTH = BOARD_WIDTH + PADDING * 2
-GAME_HEIGHT = GAME_WIDTH + 50
 
 class RenderGo:
     def __init__(self, go_game):
         self.go_game = go_game
+        self.dim = go_game.dim
+        self.board_render = (WIDTH + MARGIN) * (self.dim - 1) + MARGIN  # Actual width for the board
+        self.game_width = (WIDTH + MARGIN) * (self.dim - 1) + MARGIN + PADDING * 2
+        self.game_height = self.game_width + 50
 
     def _render_button(self):
         color = colors["b"] if not self.go_game.playing else colors["r"]
         info = "Start" if not self.go_game.playing else "Surrender"
 
-        pygame.draw.rect(self.go_game.display_surface, color, (GAME_WIDTH // 2 - 50, GAME_HEIGHT - 85, 100, 30))
+        pygame.draw.rect(self.go_game.display_surface, color, (self.game_width // 2 - 50, self.game_height - 85, 100, 30))
 
         info_font = pygame.font.SysFont('Helvetica', 16)
         text = info_font.render(info, True, colors["w"])
         text_rect = text.get_rect()
-        text_rect.centerx = GAME_WIDTH // 2
-        text_rect.centery = GAME_HEIGHT - 75
+        text_rect.centerx = self.game_width // 2
+        text_rect.centery = self.game_height - 75
         self.go_game.display_surface.blit(text, text_rect)
 
     def _render_pass_button(self):
         color = colors["b"] if not self.go_game.pass_button_clicked else colors["y"]
         info = "Pass"
-        pygame.draw.rect(self.go_game.display_surface, color, (GAME_WIDTH // 2 - 50, GAME_HEIGHT - 50, 100, 30))
+        pygame.draw.rect(self.go_game.display_surface, color, (self.game_width // 2 - 50, self.game_height - 50, 100, 30))
         info_font = pygame.font.SysFont('Helvetica', 16)
         text = info_font.render(info, True, colors["w"])
         text_rect = text.get_rect()
-        text_rect.centerx = GAME_WIDTH // 2
-        text_rect.centery = GAME_HEIGHT - 35
+        text_rect.centerx = self.game_width // 2
+        text_rect.centery = self.game_height - 35
         self.go_game.display_surface.blit(text, text_rect)
 
     def _render_game_info(self):
@@ -59,7 +57,7 @@ class RenderGo:
         else:
             color, win_by_points = self.go_game.retrieve_winner()
 
-        center = (GAME_WIDTH // 8 - 50 , BOARD_WIDTH + 80)
+        center = (self.game_width // 8 - 50 , self.board_render + 80)
         radius = 12
 
         pygame.draw.circle(self.go_game.display_surface, color, center, radius, 0)
@@ -77,8 +75,8 @@ class RenderGo:
         self.go_game.display_surface.blit(text, text_rect)
 
     def _render_go_piece(self):
-        for row in range(BOARD_SIZE):
-            for col in range(BOARD_SIZE):
+        for row in range(self.go_game.dim):
+            for col in range(self.go_game.dim):
                 center = ((MARGIN + WIDTH) * col + MARGIN + PADDING, (MARGIN + WIDTH) * row + MARGIN + PADDING)
                 if self.go_game.board.board_grid[row][col] != 0:
                     color = colors["b"] if self.go_game.board.board_grid[row][col] == PLAYER_BLACK else colors["w"]

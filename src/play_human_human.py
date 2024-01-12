@@ -4,16 +4,6 @@ from go_board import GoBoard
 from go_utils import GoUtils
 from go_graphics import RenderGo
 
-# Constants
-BOARD_SIZE = 9
-WIDTH = 90
-MARGIN = 2
-PADDING = 50
-DOT = 4
-BOARD = (WIDTH + MARGIN) * (BOARD_SIZE - 1) + MARGIN # Actual width for the board
-GAME_WIDTH = (WIDTH + MARGIN) * (BOARD_SIZE - 1) + MARGIN + PADDING * 2
-GAME_HEIGHT = GAME_WIDTH + 50
-
 colors = {
     "b": (0, 0, 0),
     "w": (245, 245, 245),
@@ -21,18 +11,28 @@ colors = {
     "y": (255, 204, 153),
     "g": (26, 81, 79)
 }
+# How many pixels should the board be?
+WIDTH = 90
+MARGIN = 2
+PADDING = 50
+DOT = 4
+
+
 
 # Players
 PLAYER_BLACK = 1
 PLAYER_WHITE = -1
-PASS = (-1, -1)
 
 class GoGame:
-    def __init__(self):
-        self.board = GoBoard(board_dimension=BOARD_SIZE, player=PLAYER_BLACK)
+    def __init__(self, dim):
+        self.dim = dim
+        self.board = GoBoard(board_dimension=dim ,player=1)
+        self.board_render = (WIDTH + MARGIN) * (dim - 1) + MARGIN  # Actual width for the board
+        self.game_width = (WIDTH + MARGIN) * (dim - 1) + MARGIN + PADDING * 2
+        self.game_height = self.game_width + 50
         pygame.init()
         pygame.font.init()
-        self.display_surface = pygame.display.set_mode((GAME_WIDTH, GAME_HEIGHT), pygame.HWSURFACE | pygame.DOUBLEBUF)
+        self.display_surface = pygame.display.set_mode((self.game_width, self.game_height), pygame.HWSURFACE | pygame.DOUBLEBUF)
         pygame.display.set_caption('Go')
         self.renderer = RenderGo(self)
         self.utils = GoUtils()
@@ -60,9 +60,9 @@ class GoGame:
                     self.surrender()
                     self.board.flip_player()
             elif self.playing and self.mouse_in_pass_button(pos):
-                self.handle_pass_button_click()
+                self.pass_button()
             elif self.playing:
-                self.handle_board_click(pos)
+                self.board_click(pos)
 
     def on_execute(self):
         while self.running:
@@ -76,7 +76,7 @@ class GoGame:
     def start(self):
         self.playing = True
         self.last_position = [-1, -1]
-        self.board = GoBoard(board_dimension=BOARD_SIZE, player=PLAYER_BLACK)
+        self.board = GoBoard(board_dimension=self.dim, player=PLAYER_BLACK)
         self.win = False
 
     def surrender(self):
@@ -89,42 +89,42 @@ class GoGame:
         pygame.draw.rect(self.display_surface, colors["b"],
                          [PADDING,
                           PADDING,
-                          BOARD,
-                          BOARD])
+                          self.board_render,
+                          self.board_render])
 
         # Draw the grid
-        for row in range(BOARD_SIZE - 1):
-            for column in range(BOARD_SIZE - 1):
+        for row in range(self.dim - 1):
+            for column in range(self.dim - 1):
                 pygame.draw.rect(self.display_surface, colors["y"],
                                  [(MARGIN + WIDTH) * column + MARGIN + PADDING,
                                   (MARGIN + WIDTH) * row + MARGIN + PADDING,
                                   WIDTH,
                                   WIDTH])
     def mouse_in_button(self, pos):
-        return GAME_WIDTH // 2 - 50 <= pos[0] <= GAME_WIDTH // 2 + 50 and GAME_HEIGHT - 85 <= pos[1] <= GAME_HEIGHT - 55
+        return self.game_width // 2 - 50 <= pos[0] <= self.game_width // 2 + 50 and self.game_height - 85 <= pos[1] <= self.game_height - 55
 
     def mouse_in_pass_button(self, pos):
-        return GAME_WIDTH // 2 - 50 <= pos[0] <= GAME_WIDTH // 2 + 50 and GAME_HEIGHT - 50 <= pos[1] <= GAME_HEIGHT - 20
+        return self.game_width // 2 - 50 <= pos[0] <= self.game_width // 2 + 50 and self.game_width - 50 <= pos[1] <= self.game_width - 20
 
-    def handle_pass_button_click(self):
+    def pass_button(self):
         self.pass_button_clicked = False
-        _, self.board = self.utils.make_move(board=self.board, move=PASS)
+        _, self.board = self.utils.make_move(board=self.board, move=(-1,-1))
         if not self.passed_once:
             self.passed_once = True
         else:
             print("Game Over!")
             self.game_over = True
-        self.print_winner()
+            self.print_winner()
 
-    def handle_board_click(self, pos):
+
+    def board_click(self, pos):
         col = (pos[0] - PADDING + WIDTH // 2) // (WIDTH + MARGIN)
         row = (pos[1] - PADDING + WIDTH // 2) // (WIDTH + MARGIN)
 
-        if 0 <= row < BOARD_SIZE and 0 <= col < BOARD_SIZE:
+        if 0 <= row < self.dim and 0 <= col < self.dim:
             print(f"move: row {row} col: {col}")
             _, self.board = self.utils.make_move(board=self.board, move=(row, col))
             self.passed_once = False
-            self.print_winner()
             self.last_position = self.board.get_last_position()
 
     def print_winner(self):
@@ -136,5 +136,5 @@ class GoGame:
         return self.utils.evaluate_winner(self.board.board_grid)
 
 if __name__ == "__main__":
-    go_game = GoGame()
+    go_game = GoGame(dim = 7)
     go_game.on_execute()

@@ -3,10 +3,9 @@ from collections import deque
 BLACK = 1
 WHITE = -1
 
-class GoUtils():
-    """The go specific utility class.
-    The current board contains the current player and other board information defined in go_board.
-    The utilities are static functions called by GoUtils.function_name()
+class GoUtils:
+    """ This class summarizes all the operations which can be performed during the go game. Gelping operations,
+    which are only called by other operations, are also included in this class and begin with an underscore.
     """
 
     def is_valid_move(self, board, move):
@@ -140,8 +139,8 @@ class GoUtils():
             pieces_in_group = GoUtils._find_pieces_in_group(position, board_grid)
         else:
             return board_grid
-        for (r, c) in pieces_in_group:
-            board_grid[r][c] = 0
+        for (row, column) in pieces_in_group:
+            board_grid[row][column] = 0
         return board_grid
 
     @staticmethod
@@ -162,7 +161,7 @@ class GoUtils():
                     queue.append(neighbor)
         return group_members
 
-    @staticmethod
+    @staticmethod # This is a helper function for _find_pieces_in_group, the function searches for the positions with the same color as the current position
     def _find_positions_same_color(position, board_grid, current_player=None):
         neighbors = set()
         (r, c) = position
@@ -171,32 +170,30 @@ class GoUtils():
         else:
             player = board_grid[r][c]
         board_dimension = len(board_grid)
-
-        #top
+        # above
         if r > 0 and board_grid[r - 1][c] == player:
             neighbors.add((r - 1, c))
-        #bottom
+        # below
         if r < board_dimension - 1 and board_grid[r + 1][c] == player:
             neighbors.add((r + 1, c))
-        #left
+        # left
         if c > 0 and board_grid[r][c - 1] == player:
             neighbors.add((r, c - 1))
-        #right
+        # right
         if c < board_dimension - 1 and board_grid[r][c + 1] == player:
             neighbors.add((r, c + 1))
         return neighbors
 
-    @staticmethod
+    @staticmethod #this is a helper function for _find_pieces_in_group, the function searches for the positions with the opposite color as the current position
     def _find_positions_opposite_color(position, board_grid):
         neighbors = set()
         (r, c) = position
         player = board_grid[r][c]
         board_dimension = len(board_grid)
-
-        #top
+        # above
         if r > 0 and board_grid[r - 1][c] == -player:
             neighbors.add((r - 1, c))
-        #bottom
+        # bellow
         if r < board_dimension - 1 and board_grid[r + 1][c] == -player:
             neighbors.add((r + 1, c))
         #left
@@ -207,7 +204,7 @@ class GoUtils():
             neighbors.add((r, c + 1))
         return neighbors
 
-    @staticmethod
+    @staticmethod # this functiond counts the liberty of a single stone
     def _count_liberty_for_one_stone(board_grid, position):
         (r, c) = position
         board_dimension = len(board_grid)
@@ -228,7 +225,7 @@ class GoUtils():
 
         return liberty
 
-    @staticmethod
+    @staticmethod # this function counts the liberty of a group of stones
     def _count_liberty(board_grid, position):
         group = GoUtils._find_pieces_in_group(position, board_grid)
         total_liberties = 0
@@ -236,7 +233,7 @@ class GoUtils():
             total_liberties += GoUtils._count_liberty_for_one_stone(board_grid, stone)
         return total_liberties
 
-    @staticmethod
+    @staticmethod # this function checks if the move violates the Ko rule
     def _check_ko_rule(board, move):
         if GoUtils._find_positions_same_color(move, board.board_grid, board.player) == set() and GoUtils._count_liberty(board.board_grid, move) == 0:
             #Condition one passes
@@ -262,18 +259,18 @@ class GoUtils():
                         return True
         return False
 
-    @staticmethod
+    @staticmethod # this function checks if the move is a pass
     def _is_move_pass(move):
         return move == (-1, -1)
 
-    @staticmethod
+    @staticmethod #this function checks if the move is in the board
     def _is_move_in_board(move, board_dimension):
         (r,c) = move
         if r < 0 or c < 0 or r >= board_dimension or c >= board_dimension:
             return False
         return True
 
-    @staticmethod
+    @staticmethod #this function finds all the empty pieces that are connected to each other
     def _find_connected_empty_pieces(board_grid):
         connected_empty_pieces_and_player = [] #Value to be returned
         border_stone_nums = {}
@@ -323,18 +320,28 @@ class GoUtils():
 
         return connected_empty_pieces_and_player
 
-    @staticmethod
+    @staticmethod # this function finds the next position that has not been visited
     def _get_next_visit(visited):
         for position in visited:
             if not visited[position]:
                 return position
         return None
 
-    @staticmethod
+    @staticmethod # this function removes the captured stones
     def _remove_captured_stones(board_grid):
-        return board_grid
+        # Create a copy of the board to avoid modifying the original board during iteration
+        new_board = [row[:] for row in board_grid]
 
-    @staticmethod
+        for i in range(len(new_board)):
+            for j in range(len(new_board[0])):
+                position = (i, j)
+                if new_board[i][j] != 0:  # Check if the position contains a stone
+                    if GoUtils._count_liberty(new_board, position) == 0:
+                        # If the stone has 0 liberties, remove it
+                        new_board = GoUtils._remove_pieces_if_no_liberty(position, new_board)
+        return new_board
+
+    @staticmethod # this function counts the stones
     def _count_stones(board_grid, player):
         count = 0
         for i in range(len(board_grid)):
@@ -343,13 +350,12 @@ class GoUtils():
                     count += 1
         return count
 
-    @staticmethod
+    @staticmethod #this function finds the direct neighbors of a position
     def _direct_neighbors(position, board_grid):
         neighbors = set()
         (r, c) = position
         player = board_grid[r][c]
         board_dimension = len(board_grid)
-
         #top
         if r > 0:
             neighbors.add((r - 1, c))
