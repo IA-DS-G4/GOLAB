@@ -21,7 +21,7 @@ DOT = 4
 class RenderGo:
     def __init__(self, go_game):
         self.go_game = go_game
-        self.dim = go_game.dim
+        self.dim = go_game.board.board_dimension
         self.board_render = (WIDTH + MARGIN) * (self.dim - 1) + MARGIN  # Actual width for the board
         self.game_width = (WIDTH + MARGIN) * (self.dim - 1) + MARGIN + PADDING * 2
         self.game_height = self.game_width + 50
@@ -75,8 +75,8 @@ class RenderGo:
         self.go_game.display_surface.blit(text, text_rect)
 
     def _render_go_piece(self):
-        for row in range(self.go_game.dim):
-            for col in range(self.go_game.dim):
+        for row in range(self.dim):
+            for col in range(self.dim):
                 center = ((MARGIN + WIDTH) * col + MARGIN + PADDING, (MARGIN + WIDTH) * row + MARGIN + PADDING)
                 if self.go_game.board.board_grid[row][col] != 0:
                     color = colors["b"] if self.go_game.board.board_grid[row][col] == PLAYER_BLACK else colors["w"]

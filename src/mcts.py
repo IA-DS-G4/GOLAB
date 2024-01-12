@@ -7,72 +7,55 @@ from Wrappers import ActionHistory, Action, Player, Node
 import copy
 
 
-MAXIMUM_FLOAT_VALUE = float('inf')
-
-
 class MinMaxStats:
-    """A class that holds the min-max values of the tree."""
+    """Class For storing MinMax values of Nodes"""
 
     def __init__(self):
-        self.maximum =-MAXIMUM_FLOAT_VALUE
-        self.minimum = MAXIMUM_FLOAT_VALUE
-
+        self.maximum =-float('inf')
+        self.minimum = float('inf')
     def update(self, value: float):
         self.maximum = max(self.maximum, value)
         self.minimum = min(self.minimum, value)
-
     def normalize(self, value: float) -> float:
         if self.maximum > self.minimum:
-            # We normalize only when we have set the maximum and minimum values.
             return (value - self.minimum) / (self.maximum - self.minimum)
         return value
 
 
 class MCTS:
-    """
-    Core Monte Carlo Tree Search algorithm.
-    To decide on an action, we run N simulations, always starting at the root of
-    the search tree and traversing the tree according to the UCB formula until we
-    reach a leaf node.
-    """
+    """A class that runs Monte Carlo Tree Search. We use the UCB1 formula. to select a child and search from there"""
 
     @staticmethod
     def play_game(config: MuZeroConfig, network: Network):
         game = config.new_game()
 
         while not game.done and len(game.board.game_history) < config.max_moves:
-            # At the root of the search tree we use the representation function to
-            # obtain a hidden state given the current observation.
+            # At the root of the search tree we use the representation function to to get a hidden state from observation
             root = Node(0)
             current_observation = game.get_observation()
+            # expand different board actions
             MCTS.expand_node(root,
                         game.to_play(),
                         game.legal_actions(),
                         network.initial_inference(current_observation))
             MCTS.add_exploration_noise(config, root)
-
-            # We then run a Monte Carlo Tree Search using only action sequences and the
-            # model learned by the network.
+            # running the MCTS using the network for evaluating positions and choosing actions
             MCTS.run_mcts(config,root, game, network)
-            action = MCTS.select_action(config, len(game.action_history), root, network)
+            action = MCTS.select_action(config, root, network)
             game.store_search_statistics(root)
-            #print(f"move{action} from Player {game.board.player}")
             game.apply(action)
-        #print(f"simulated game! Winner is Player {game.utils.evaluate_winner(game.board.board_grid)}")
         return game
 
-    # Core Monte Carlo Tree Search algorithm.
-    # To decide on an action, we run N simulations, always starting at the root of
-    # the search tree and traversing the tree according to the UCB formula until we
-    # reach a leaf node.
     @staticmethod
     def run_mcts(config: MuZeroConfig,
                  root: Node,
                  game,
                  network: Network):
-
+        # store minmax values
         min_max_stats = MinMaxStats()
+        #copy game state to avoid changing the original game when running MCTS
         game_copy = copy.deepcopy(game)
+        # we simulate the game for congig.num_simulations times
         for _ in range(config.num_simulations):
 
             history = game_copy.get_action_history()
@@ -84,9 +67,7 @@ class MCTS:
                 game_copy.apply(action)
                 history.add_action(action)
                 search_path.append(node)
-
-            # Inside the search tree we use the dynamics function to obtain the next
-            # hidden state given an action and the previous hidden state.
+            # When traversing the tree we use the dynamics network to predict next states
             parent = search_path[-2]
             network_output = network.recurrent_inference(parent.hidden_state,
                                                          history.last_action())
@@ -99,7 +80,7 @@ class MCTS:
             if game_copy.done:
                 break
         del game_copy
-    @staticmethod
+    @staticmethod # take a softmax sample from a given distribution
     def softmax_sample(distribution, temperature: float):
         visit_counts = np.array([visit_counts for _ , visit_counts in distribution])
         actions = np.array([actions for actions , _ in distribution])
@@ -111,7 +92,6 @@ class MCTS:
         return action_index
     @staticmethod
     def select_action(config,
-                      num_moves: int,
                       node: Node,
                       network: Network) -> Action:
         visit_counts = [(action,child.visit_count) for action, child in node.children.items()]
@@ -160,9 +140,8 @@ class MCTS:
 
             value = node.reward + discount * value
 
-    # At the start of each search, we add dirichlet noise to the prior of the root
-    # to encourage the search to explore new actions.
-    @staticmethod
+
+    @staticmethod # We add noise to the distribution to encourage exploration
     def add_exploration_noise(config: MuZeroConfig, node: Node):
         actions = list(node.children.keys())
         noise = np.random.dirichlet([config.root_dirichlet_alpha] * len(actions))
@@ -171,8 +150,7 @@ class MCTS:
             node.children[a].prior = node.children[a].prior * (1 - frac) + n * frac
 
 
-class SharedStorage(object):
-
+class NetworkStorage(object):
     def __init__(self, config):
         self.network = Network(config)
 
@@ -184,17 +162,16 @@ class SharedStorage(object):
 
 
 
-class ReplayBuffer(object):
-
+class GameStorage(object):
     def __init__(self, config: MuZeroConfig):
         self.window_size = config.window_size
         self.batch_size = config.batch_size
-        self.buffer = []
+        self.store = []
 
     def save_game(self, game):
-        if len(self.buffer) > self.window_size:
-            self.buffer.pop(0)
-        self.buffer.append(game)
+        if len(self.store) > self.window_size:
+            self.store.pop(0)
+        self.store.append(game)
 
     def sample_batch(self, num_unroll_steps: int, td_steps: int, action_space_size: int):
         games = [self.sample_game() for _ in range(self.batch_size)]
@@ -205,15 +182,15 @@ class ReplayBuffer(object):
                 for (g, i) in game_pos]
 
     def sample_game(self):
-        # Sample game from buffer either uniformly or according to some priority.
-        return self.buffer[np.random.choice(range(len(self.buffer)))]
+        # get games from the gamestorage
+        return self.store[np.random.choice(range(len(self.store)))]
 
     def sample_position(self, game) -> int:
-        # Sample position from game either uniformly or according to some priority.
+        # sample a postion from the game
         return np.random.choice(range(len(game.rewards) - 1))
 
     def last_game(self):
-        return self.buffer[-1]
+        return self.store[-1]
 
 
 

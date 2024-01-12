@@ -106,3 +106,4 @@ class MuZeroAgent:
 
 if __name__ == "__main__":
     agent = MuZeroAgent(config=make_Go9x9_config())
+    agent.connect_to_server()

@@ -5,6 +5,7 @@ from go_utils import GoUtils
 from go_graphics import RenderGo
 from MuZeroAgent import MuZeroAgent
 from Go_9x9 import Go9x9Config,make_Go9x9_config
+from Go_7x7 import Go7x7Config,make_Go7x7_config
 import numpy as np
 # Constants
 
@@ -29,7 +30,7 @@ PLAYER_BLACK = 1
 PLAYER_WHITE = -1
 
 class GoGame:
-    def __init__(self, config, dim):
+    def __init__(self, config, dim,backup=1):
         self.board = GoBoard(board_dimension=dim ,player=1)
         self.board_render = (WIDTH + MARGIN) * (dim - 1) + MARGIN  # Actual width for the board
         self.game_width = (WIDTH + MARGIN) * (dim - 1) + MARGIN + PADDING * 2
@@ -47,7 +48,7 @@ class GoGame:
         self.playing = False
         self.win = False
         self.last_position = [-1, -1]
-        self.agent = MuZeroAgent(config=config)
+        self.agent = MuZeroAgent(config=config,backup_count_to_load=backup)
 
     def handle_event(self, event):
         if event.type == pygame.QUIT:
@@ -95,7 +96,7 @@ class GoGame:
                         self.renderer.render_all()
 
                         # Machine plays
-                        self.agent.receive_move((r,c))
+                        self.agent.act_other_agent_move((r,c))
                         self.muzero_respond()
                         self.lastPosition = self.board.get_last_position()
                     else:
@@ -177,5 +178,5 @@ class GoGame:
 
 
 if __name__ == "__main__":
-    go_game = GoGame(config=make_Go9x9_config(), dim=9)
+    go_game = GoGame(config=make_Go7x7_config(), dim=7,backup = 9)
     go_game.on_execute()

@@ -1,9 +1,9 @@
 import numpy
 from go_board import GoBoard
 from go_utils import GoUtils
-from muzeroconfig import MuZeroConfig, ActionHistory
+from muzeroconfig import MuZeroConfig
 from typing import List
-from Wrappers import Action, Player, Node
+from Wrappers import Action, Player, Node, ActionHistory
 import tensorflow as tf
 
 class Go7x7Config(MuZeroConfig):
@@ -36,7 +36,7 @@ def make_Go7x7_config() -> MuZeroConfig:
                         discount=0.999,
                         dropout_rate = 0.1,
                         dirichlet_alpha=0.25,
-                        num_simulations=3,
+                        num_simulations=10,
                         batch_size=16,
                         td_steps=25,
                         lr_init=0.001,
