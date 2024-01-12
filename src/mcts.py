@@ -115,7 +115,7 @@ class MCTS:
                       node: Node,
                       network: Network) -> Action:
         visit_counts = [(action,child.visit_count) for action, child in node.children.items()]
-        t = config.visit_softmax_temperature_fn(num_moves=num_moves, training_steps=network.training_steps())
+        t = config.visit_softmax_temperature(training_steps=network.training_steps())
         action = Action(MCTS.softmax_sample(visit_counts, t))
         return action
 
@@ -201,7 +201,7 @@ class ReplayBuffer(object):
         game_pos = [(g, self.sample_position(g)) for g in games]
         return [(g.observation_list[i],
                  g.action_history[i:i + num_unroll_steps],
-                 g.make_target(state_index=i,num_unroll_steps=num_unroll_steps, td_steps=td_steps, to_play=g.to_play(), action_space_size=action_space_size))
+                 g.make_target(state_index=i,num_unroll_steps=num_unroll_steps, td_steps=td_steps))
                 for (g, i) in game_pos]
 
     def sample_game(self):

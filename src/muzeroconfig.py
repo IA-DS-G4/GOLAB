@@ -26,7 +26,7 @@ class MuZeroConfig(object):
                  training_episodes: int,
                  hidden_layer_size: int,
                  model_name: str,
-                 visit_softmax_temperature_fn,
+                 visit_softmax_temperature,
                  known_bounds: Optional[KnownBounds] = None,
                  ):
         ### Self-Play
@@ -35,7 +35,7 @@ class MuZeroConfig(object):
         self.observation_space_shape = observation_space_shape
         self.num_actors = num_actors
 
-        self.visit_softmax_temperature_fn = visit_softmax_temperature_fn
+        self.visit_softmax_temperature = visit_softmax_temperature
         self.max_moves = max_moves
         self.num_simulations = num_simulations
         self.discount = discount

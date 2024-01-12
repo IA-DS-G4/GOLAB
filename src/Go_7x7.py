@@ -12,9 +12,7 @@ class Go7x7Config(MuZeroConfig):
         return Go7x7()
 
 def make_Go7x7_config() -> MuZeroConfig:
-    def visit_softmax_temperature(num_moves, training_steps):
-
-        # higher temperature higher exploration
+    def visit_softmax_temperature(training_steps):
 
         if training_steps < 100:
             return 3
@@ -45,7 +43,7 @@ def make_Go7x7_config() -> MuZeroConfig:
                         lr_decay_steps=10,
                         training_episodes=500,
                         hidden_layer_size= 49,
-                        visit_softmax_temperature_fn=visit_softmax_temperature,
+                        visit_softmax_temperature=visit_softmax_temperature,
                         num_actors=2,
                         model_name="Go7x7")
 
@@ -124,6 +122,7 @@ class Go7x7:
         return ActionHistory(self.action_history, self.action_space_size,self.board.player)
 
     def store_search_statistics(self, root: Node):
+        # We store the visited board positions and their values for later training
         sum_visits = sum(child.visit_count for child in root.children.values())
         action_space = (Action(action) for action in range(self.action_space_size))
         self.child_visits.append([
@@ -132,10 +131,8 @@ class Go7x7:
         ])
         self.root_values.append(root.value())
 
-    def make_target(self, state_index: int, num_unroll_steps: int, td_steps: int, to_play: Player,
-                    action_space_size: int):
-        # The value target is the discounted root value of the search tree N steps
-        # into the future, plus the discounted sum of all rewards until then.
+    def make_target(self, state_index: int, num_unroll_steps: int, td_steps: int):
+        # Bootsstapping technique to calculate the value of a state
         targets = []
         for current_index in range(state_index, state_index + num_unroll_steps + 1):
             bootstrap_index = current_index + td_steps

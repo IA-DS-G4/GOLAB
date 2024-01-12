@@ -129,7 +129,7 @@ def train_network(config: MuZeroConfig, storage: SharedStorage, replay_buffer: R
     return loss
 
 
-def muzero(config: MuZeroConfig):
+def muzero_train(config: MuZeroConfig):
 
     model_name = config.model_name
     storage = SharedStorage(config)
@@ -158,6 +158,6 @@ def muzero(config: MuZeroConfig):
         df.to_csv(f'loss_{model_name}.csv')
 
 if __name__ == "__main__":
-    muzero(make_Go7x7_config())
+    muzero_train(make_Go7x7_config())
     #muzero(make_Go9x9_config())
 
