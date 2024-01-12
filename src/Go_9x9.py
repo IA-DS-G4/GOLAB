@@ -40,7 +40,7 @@ def make_Go9x9_config() -> MuZeroConfig:
                         num_simulations=3,
                         batch_size=16,
                         td_steps=25,
-                        lr_init=0.00001,
+                        lr_init=0.001,
                         lr_decay_steps=10,
                         training_episodes=500,
                         hidden_layer_size= 81,
