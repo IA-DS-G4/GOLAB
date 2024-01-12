@@ -36,6 +36,7 @@ def make_Go9x9_config() -> MuZeroConfig:
                         observation_space_shape= (9,9),
                         max_moves=164,
                         discount=0.999,
+                        dropout_rate=0.1,
                         dirichlet_alpha=0.25,
                         num_simulations=3,
                         batch_size=16,
