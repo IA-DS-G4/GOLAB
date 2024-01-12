@@ -1,7 +1,7 @@
 import numpy as np
 from Wrappers import Action
 from typing import NamedTuple, Dict, List
-from tensorflow.python.keras import layers
+from keras import layers
 import tensorflow as tf
 import tensorflow.python.keras as k
 import keras

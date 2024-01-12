@@ -158,6 +158,6 @@ def muzero(config: MuZeroConfig):
         df.to_csv(f'loss_{model_name}.csv')
 
 if __name__ == "__main__":
-   # muzero(make_Go7x7_config())
+    #muzero(make_Go7x7_config())
     muzero(make_Go9x9_config())
 
