@@ -4,6 +4,7 @@ from typing import NamedTuple, Dict, List
 from tensorflow.python.keras import layers
 import tensorflow as tf
 import tensorflow.python.keras as k
+import keras
 from keras import __version__
 k.__version__ = __version__
 from tensorflow.python.keras.regularizers import L2
@@ -39,7 +40,7 @@ class Network(object):
 
 
         #state encoder conv network
-        self.representation = k.Sequential()
+        self.representation = keras.Sequential()
         self.representation.add(layers.Conv2D(64, (3, 3),activation='relu',kernel_regularizer=regularizer))
         self.representation.add(layers.Conv2D(64, (2, 2), activation='relu', kernel_regularizer=regularizer))
         self.representation.add(layers.Conv2D(64, (2, 2), activation='relu', kernel_regularizer=regularizer))
@@ -51,7 +52,7 @@ class Network(object):
         self.representation.add(layers.Dense(config.hidden_layer_size, kernel_regularizer=regularizer))
 
         #value network MLP
-        self.value = k.Sequential()
+        self.value = keras.Sequential()
         self.value.add(layers.Dense(config.hidden_layer_size, activation='relu', kernel_regularizer=regularizer))
         self.value.add(layers.Dense(512, activation="relu", kernel_regularizer=regularizer))
         self.value.add(layers.Dropout(config.dropout_rate))
@@ -62,7 +63,7 @@ class Network(object):
         self.value.add(layers.Dense(1,activation='relu', kernel_regularizer=regularizer))
 
         # policy network conv
-        self.policy = k.Sequential()
+        self.policy = keras.Sequential()
         self.policy.add(layers.Dense(config.hidden_layer_size, activation='relu', kernel_regularizer=regularizer))
         self.policy.add(layers.Dense(512, activation="relu", kernel_regularizer=regularizer))
         self.policy.add(layers.Dropout(config.dropout_rate))
@@ -73,7 +74,7 @@ class Network(object):
         self.policy.add(layers.Dense(config.action_space_size, activation='softmax', kernel_regularizer=regularizer))
 
         #reward net MLP
-        self.reward = k.Sequential()
+        self.reward = keras.Sequential()
         self.reward.add(layers.Dense(config.hidden_layer_size, activation='relu', kernel_regularizer=regularizer))
         self.reward.add(layers.Dense(512, activation="relu", kernel_regularizer=regularizer))
         self.reward.add(layers.Dropout(config.dropout_rate))
@@ -84,7 +85,7 @@ class Network(object):
         self.reward.add(layers.Dense(1,activation='relu', kernel_regularizer=regularizer))
 
 
-        self.dynamics = k.Sequential()
+        self.dynamics = keras.Sequential()
         self.dynamics.add(layers.Dense(config.hidden_layer_size, activation='relu', kernel_regularizer=regularizer))
         self.dynamics.add(layers.Dense(512, activation="relu", kernel_regularizer=regularizer))
         self.dynamics.add(layers.Dropout(0.2))
@@ -93,11 +94,19 @@ class Network(object):
         self.dynamics.add(layers.Dense(512, activation="relu", kernel_regularizer=regularizer))
         self.dynamics.add(layers.Dense(config.hidden_layer_size, kernel_regularizer=regularizer))
 
+        self.compile(optimizer=keras.optimizers.legacy.Adam(),metrics=['accuracy'], loss='mean_squared_error')
 
         self.tot_training_steps = 0
         self.backup_count = 0
 
         self.action_space_size = config.action_space_size
+
+    def compile(self,loss, optimizer, metrics):
+        self.dynamics.compile(optimizer=optimizer,loss=loss,metrics=metrics)
+        self.representation.compile(optimizer=optimizer,loss=loss,metrics=metrics)
+        self.value.compile(optimizer=optimizer,loss=loss,metrics=metrics)
+        self.policy.compile(optimizer=optimizer,loss=loss,metrics=metrics)
+        self.reward.compile(optimizer=optimizer,loss=loss,metrics=metrics)
 
     def summarise(self):
         self.representation.build(self.observation_space_shape)
@@ -183,14 +192,15 @@ class Network(object):
         self.reward.save(f"../Saved models/{model_name}/backup{self.backup_count}/reward_network")
 
     def load_network_deepcopy(self, model_name, backup_count):
-        self.representation = k.models.load_model(
+        self.representation = keras.models.load_model(
             f"../Saved models/{model_name}/backup{backup_count}/representation_network")
-        self.value = k.models.load_model(f"../Saved models/{model_name}/backup{backup_count}/value_network")
-        self.dynamics = k.models.load_model(f"../Saved models/{model_name}/backup{backup_count}/dynamics_network")
-        self.policy = k.models.load_model(f"../Saved models/{model_name}/backup{backup_count}/policy_network")
-        self.reward = k.models.load_model(f"../Saved models/{model_name}/backup{backup_count}/reward_network")
+        self.value = keras.models.load_model(f"../Saved models/{model_name}/backup{backup_count}/value_network")
+        self.dynamics = keras.models.load_model(f"../Saved models/{model_name}/backup{backup_count}/dynamics_network")
+        self.policy = keras.models.load_model(f"../Saved models/{model_name}/backup{backup_count}/policy_network")
+        self.reward = keras.models.load_model(f"../Saved models/{model_name}/backup{backup_count}/reward_network")
 
 
 if __name__ == "__main__":
     network =Network(make_Go7x7_config())
+    #network.load_network_deepcopy(model_name="Go7x7", backup_count=4)
     network.summarise()

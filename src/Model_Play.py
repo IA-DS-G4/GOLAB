@@ -39,7 +39,7 @@ PLAYER_WHITE = -1
 PASS = (-1, -1)
 
 class MuZeroAgent:
-    def __init__(self, model_path, game, config: MuZeroConfig, backup_count_to_load=1):
+    def __init__(self, model_path: str, game, config: MuZeroConfig, backup_count_to_load=1):
         self.model_path = model_path
         self.config = config
         self.game = game
@@ -96,7 +96,7 @@ class MuZeroAgent:
         client_socket.close()
 
     def receive_move(self):
-        move =
+        move = (1,2)
         action = Action(move[0]*self.game.board_size + move[1])
         self.game.apply(action)
 
@@ -127,4 +127,4 @@ class MuZeroAgent:
 
 
 if __name__ == "__main__":
-    agent = MuZeroAgent(config=make_Go7x7_config(), game=Go7x7, model_path="Go7x7")
+    agent = MuZeroAgent(config=make_Go9x9_config(), game=Go9x9, model_path="Go9x9")

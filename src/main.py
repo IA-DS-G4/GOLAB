@@ -118,8 +118,8 @@ def train_network(config: MuZeroConfig, storage: SharedStorage, replay_buffer: R
 
     network.tot_training_steps += 1
 
-    #save model every 25 episodes
-    if iterations % 25 == 0 and iterations >0:
+    #save model every 10 episodes
+    if iterations % 10 == 0 :
         network.backup_count += 1
         network.save_network_deepcopy(model_name=config.model_name)
 
