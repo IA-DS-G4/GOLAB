@@ -86,7 +86,7 @@ class MuZeroAgent:
                          self.game.legal_actions(),
                          self.network.initial_inference(current_observation))
         MCTS.run_mcts(self.config, root, self.game, self.network)
-        action = MCTS.select_action(self.config, len(self.game.action_history), root, self.network)
+        action = MCTS.select_action(self.config, root, self.network)
         self.game.store_search_statistics(root)
         # print(f"move{action} from Player {game.board.player}")
         self.game.apply(action)
@@ -107,3 +107,4 @@ class MuZeroAgent:
 if __name__ == "__main__":
     agent = MuZeroAgent(config=make_Go9x9_config())
     agent.connect_to_server()
+
